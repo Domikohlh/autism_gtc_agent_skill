@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+.idea/
+.vscode/
+
+# Never commit real reports or anything derived from them.
+# This project touches health data; keep it out of version control by default.
+*.vcf
+*.vcf.gz
+reports/
+patient_data/
+findings*.json
+brief*.md
+!docs/**

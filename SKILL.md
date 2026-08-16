@@ -61,7 +61,8 @@ specifics from it or from their genetics team — do not fill the gap from memor
 ### Step 1 — Read the report and normalise what's in it
 
 If a file was provided, use `scripts/parse_report.py` to pull out the structured content.
-If the user pasted or described the result, extract the same fields by reading.
+It reads PDF, text and VCF, and emits JSON. If the user pasted or described the result,
+run it with `--text` or extract the same fields by reading.
 
 What you need:
 
@@ -69,6 +70,8 @@ What you need:
 - **Classification**: pathogenic / likely pathogenic / VUS / likely benign / benign
 - **Zygosity** and **inheritance** (de novo, maternal, paternal, unknown)
 - **CNVs / chromosomal findings** with coordinates and size
+- **Repeat expansions** — reported separately in `repeats`; sizes are reported, never
+  interpreted, because thresholds are gene- and assay-specific
 - **Test type** (microarray, panel, exome, genome) and **report date** — the date
   matters, see Step 5
 - **Phenotype / indication** as stated on the report
@@ -77,15 +80,36 @@ What you need:
 Read `references/report_parsing.md` when a report format is unfamiliar or the fields
 above are hard to locate.
 
+**Read the parser's own flags before trusting its output.** `needs_review` on a record and
+`warnings` on the report are where it tells you what it is unsure about — a gene inferred
+from prose, a classification read from a column to the left of the variant, a CNV read
+from prose without copy number, a report date it had to guess (`report_date_provenance`).
+Check each flagged field against the source rather than passing it through.
+
+Identifiers are redacted from the parser's output by default. That is a backstop, not a
+licence: do not echo names, dates of birth or record numbers into anything you write, and
+see the privacy section of `README.md` before working with a real patient's report.
+
 If something critical is genuinely ambiguous — most often which gene, or whether a
 result is pathogenic versus VUS — ask rather than guess. One clarifying question is
 cheaper than a confidently wrong brief.
 
 ### Step 2 — Look up what is established for this gene
 
-Consult `references/gene_index.md`. For genes in the index you get: the associated
-syndrome, the authoritative sources, which care domains have published guidance, and
-any gene-specific traps (e.g. SCN2A's direction-of-effect problem).
+Run `scripts/gene_lookup.py`, and read `references/gene_index.md` for the prose behind an
+entry. For curated genes you get: the associated syndrome, the authoritative sources,
+which care domains have published guidance, and any gene-specific traps (e.g. SCN2A's
+direction-of-effect problem).
+
+```bash
+python scripts/gene_lookup.py PTEN            # gene symbol
+python scripts/gene_lookup.py Rett            # syndrome name or alias
+python scripts/gene_lookup.py --cnv 22q11.2 --copies 1   # CNV from the report
+```
+
+**Route CNVs through `--cnv`.** A recurrent region is where much of the Tier 1 content
+lives, and a CNV finding that never reaches the lookup loses it. For 16p11.2 in
+particular, pass `--copies` — deletion and duplication have partly opposite phenotypes.
 
 Then **fetch the authoritative sources** and read the current specifics from them.
 Prefer, in order: the named guideline or consensus statement → GeneReviews →
@@ -186,7 +210,10 @@ Some specifics that matter:
    limits are why clinicians trust a tool.
 7. **De-identify by default.** Do not echo names, dates of birth, or record numbers into
    output files. Refer to "the individual" or, if the user uses a name in conversation,
-   follow their lead in conversation only.
+   follow their lead in conversation only. The scripts enforce this — the parser redacts
+   identifiers, and `render_brief.py` refuses to write a document containing them — but
+   pattern-matching catches labelled identifiers only, and a genetic result is
+   identifying in itself. The obligation is yours, not the regex's.
 8. **Do not give a family a risk number you cannot source.** A remembered percentage is
    worse than no percentage.
 
@@ -206,8 +233,8 @@ Read these as needed — they are not all required for every case:
 
 | Script | Purpose |
 |---|---|
-| `scripts/parse_report.py` | Extract structured variant/CNV records from a report (PDF, text, VCF) |
-| `scripts/gene_lookup.py` | Query the curated gene index; returns syndrome, sources, care domains, traps |
-| `scripts/render_brief.py` | Assemble the two-register output document |
+| `scripts/parse_report.py` | Extract structured variant / CNV / repeat-expansion records from a report (PDF, text, VCF); redacts identifiers by default |
+| `scripts/gene_lookup.py` | Query the curated index by gene symbol, syndrome name, alias, or cytoband; returns syndrome, sources, care domains, traps |
+| `scripts/render_brief.py` | Assemble the two-register output document; refuses to write a file containing identifiers |
 
 Run `python scripts/<name>.py --help` for usage.

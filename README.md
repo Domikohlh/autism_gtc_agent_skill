@@ -21,12 +21,11 @@ works — gain-of-function showed **94%** good-to-excellent phenytoin response,
 loss-of-function **0%** ([*Brain*, 2024](https://academic.oup.com/brain/article/147/8/2761/7656659)).
 Families are told about the developmental gene and hear nothing about either.
 
-**The bottleneck is delivery, not method.** This skill is a delivery tool.
+**This tool is addressing the delivery of information, not the methodology.** This skill is a delivery tool.
 
 ### What it is not
 
-It is not a diagnostic classifier, and it does not ask *why* someone is autistic. Autistic
-adults rank genetics research 23rd of 25 priorities and causation research dead last
+It is *not* a diagnostic classifier, and it does *not* diagnose autism. *Please seek professionals if you have any concerns.* Autistic adults rank genetics research 23rd of 25 priorities and causation research dead last
 ([Cage et al., *Autism*, 2024](https://journals.sagepub.com/doi/10.1177/13623613231222656)).
 The care implications handled here are **co-occurring medical conditions** — cancer risk,
 epilepsy, cardiac issues — not autism itself. That line is deliberate and the skill
@@ -61,12 +60,12 @@ source, it names the document and stops.
 flowchart TD
   IN["INPUT<br/>report PDF · pasted text · VCF<br/>or gene symbol + clinical question"]
   IN --> P1
-  P1["scripts/parse_report.py<br/>block-segmented field extraction"]
+  P1["scripts/parse_report.py<br/>block-segmented field extraction<br/>identifiers redacted on the way out"]
   R1["references/<br/>report_parsing.md"] -. governs .-> P1
-  P1 --> J1["findings JSON<br/>gene · transcript · HGVS · classification<br/>zygosity · inheritance · CNVs<br/>test type · report date · SF flag · warnings"]
+  P1 --> J1["findings JSON<br/>gene · transcript · HGVS · classification<br/>zygosity · inheritance · CNVs · repeat expansions<br/>test type · labelled report date · SF flag · warnings"]
   J1 --> P2
-  P2["scripts/gene_lookup.py"]
-  D1[("assets/gene_index.json<br/>25 genes · 6 CNV regions<br/>no ages · no doses")] --> P2
+  P2["scripts/gene_lookup.py<br/>gene · syndrome name · cytoband"]
+  D1[("assets/gene_index.json<br/>27 genes · 5 CNV regions<br/>no ages · no doses")] --> P2
   R2["references/<br/>gene_index.md"] -. governs .-> P2
   P2 --> J2["syndrome · Tier 1 domains · Tier 2 domains<br/>SOURCES TO FETCH · traps · organisations"]
   J2 --> FETCH
@@ -83,7 +82,7 @@ flowchart TD
   STALE -- yes --> RE["add reanalysis prompt<br/>+ testing-gap note"]
   STALE -- no --> P3
   RE --> P3
-  P3["scripts/render_brief.py<br/>two registers · PHI leak check"]
+  P3["scripts/render_brief.py<br/>two registers · PHI check blocks the write"]
   R5["references/<br/>output_templates.md"] -. governs .-> P3
   P3 --> OUT["OUTPUT — brief.md<br/>family register + clinician register<br/>every clinical specific cited with a date"]
 ```
@@ -142,8 +141,11 @@ surveillance, and must not drive cascade testing.
 gene-to-care-navigator/
 ├── SKILL.md                          # trigger description, workflow, guardrails, tone
 ├── README.md
+├── LICENSE                           # Apache 2.0 — scripts/
+├── LICENSE-DOCS                      # CC BY 4.0 — prose and the index
+├── NOTICE                            # attribution and disclaimer
 ├── assets/
-│   └── gene_index.json               # 25 genes + 6 CNV regions — routing only, no specifics
+│   └── gene_index.json               # 27 genes + 5 CNV regions — routing only, no specifics
 ├── references/
 │   ├── gene_index.md                 # curated gene notes, human-readable
 │   ├── risk_layer_policy.md          # three tiers, ACMG SF v3.3, paediatric rule
@@ -151,12 +153,12 @@ gene-to-care-navigator/
 │   ├── report_parsing.md             # test types and their blind spots
 │   └── output_templates.md           # family and clinician registers
 ├── scripts/
-│   ├── parse_report.py               # report → findings JSON
-│   ├── gene_lookup.py                # gene → sources, domains, traps
+│   ├── parse_report.py               # report → findings JSON, identifiers redacted
+│   ├── gene_lookup.py                # gene / syndrome / cytoband → sources, domains, traps
 │   └── render_brief.py               # findings → two-register brief
 └── docs/
-    ├── workflow.mmd / .png
-    └── risk_layer.mmd / .png
+    ├── workflow.png
+    └── risk_layer.png
 ```
 
 ---
@@ -168,12 +170,15 @@ All three are dependency-free Python 3.10+ except PDF reading, which needs eithe
 
 ### `parse_report.py`
 
-Extracts structured findings from a report. Handles PDF, plain text, and VCF.
+Extracts structured findings from a report. Handles PDF, plain text, and VCF, and covers
+sequence variants, copy-number findings, and repeat expansions.
 
 ```bash
 python scripts/parse_report.py report.pdf
 python scripts/parse_report.py report.txt --json findings_raw.json
+python scripts/parse_report.py annotated.vcf
 python scripts/parse_report.py --text "NM_001040142.2(SCN2A):c.5645G>A (p.Arg1882Gln), heterozygous, pathogenic"
+python scripts/parse_report.py report.txt --no-redact    # synthetic reports only
 ```
 
 **Design note — block segmentation.** The first version used a fixed-width context window
@@ -181,10 +186,37 @@ around each HGVS match and silently attributed the *previous* variant's classifi
 zygosity to the next one. That failure mode is worse than missing the field, because the
 output looks correct. The parser now segments the document into one block per variant
 (bounded by neighbouring HGVS matches), reads gene and transcript *backwards* from the
-variant, and classification, zygosity, inheritance and protein change *forwards*.
+variant, and classification, zygosity, inheritance and protein change *forwards*. Where a
+column layout puts classification or zygosity to the *left* of the variant, it falls back
+to the nearest preceding match and flags that it did so.
 
-It is deliberately conservative: it emits `needs_review` flags rather than asserting a
-guessed gene symbol, and `warnings` for a missing test type or report date.
+**Design note — which date is the report date.** The first date on a report is almost
+always the date of birth, and taking it inverts the staleness judgement that drives the
+reanalysis recommendation. Dates are bucketed by the label in front of them: report-date
+labels are used, birth and collection dates are dropped as both wrong answers and
+identifiers, and an unlabelled guess is marked as one in `report_date_provenance`.
+
+**Design note — copy number in prose.** "A 2.6 Mb deletion at 22q11.21" is detected as
+well as ISCN notation, because that is how families and summary lines write it. `copies`
+stays null — prose does not distinguish a heterozygous from a homozygous loss — and what
+may sit between the band and the word "deletion" is a whitelist rather than a wildcard
+gap. A wildcard reads "a duplication at 16p11.2 and a deletion involving Xp22.31" as a
+16p11.2 deletion: a finding that does not exist, routed to genuine Tier 1 surveillance.
+
+**Repeat expansions** are extracted separately (`repeats`), with allele sizes reported and
+never interpreted — thresholds are gene- and assay-specific and belong to the reporting
+lab. This exists mostly for FMR1, where a repeat-only report would otherwise come back as
+"no variants detected".
+
+**A VCF is not a report.** Annotated VCFs (SnpEff `ANN`, VEP `CSQ`) yield gene, transcript
+and HGVS, `CLNSIG` yields a classification and `GT` yields zygosity — but classification,
+inheritance, phenotype and secondary-finding status live in the laboratory's report, and
+every VCF run says so in `warnings`.
+
+It is deliberately conservative throughout: it emits `needs_review` flags rather than
+asserting a guessed gene symbol, and `warnings` for a missing test type or report date.
+Identifiers are redacted from the emitted context by default — see
+[Data privacy](#data-privacy-and-confidentiality).
 
 <details>
 <summary>Example output</summary>
@@ -193,6 +225,7 @@ guessed gene symbol, and `warnings` for a missing test type or report date.
 {
   "test_type": "exome",
   "report_date": "12 March 2026",
+  "report_date_provenance": "labelled report-date field",
   "secondary_findings_mentioned": true,
   "variants": [
     {
@@ -207,28 +240,47 @@ guessed gene symbol, and `warnings` for a missing test type or report date.
       "classification": "VUS", "zygosity": "heterozygous",
       "inheritance": "maternal", "needs_review": []
     }
+  ],
+  "cnvs": [],
+  "repeats": [],
+  "warnings": [
+    "Secondary/incidental findings referenced. Apply the secondary findings rules in references/risk_layer_policy.md — flag and route, do not counsel."
   ]
 }
 ```
+
+Each variant also carries `genomic` (populated from VCF input) and `raw_context`, and the
+record carries `candidate_dates`. Where a header had contained a date of birth, the
+warnings would additionally note that it was excluded as an identifier.
 
 </details>
 
 ### `gene_lookup.py`
 
-Routes a gene or CNV region to its sources and care domains.
+Routes a gene, syndrome name, or CNV region to its sources and care domains.
 
 ```bash
 python scripts/gene_lookup.py PTEN
 python scripts/gene_lookup.py TSC2                    # resolves alias → TSC1 entry
+python scripts/gene_lookup.py "Cowden syndrome"       # alias → PTEN
+python scripts/gene_lookup.py Rett                    # syndrome name → MECP2
+python scripts/gene_lookup.py 22q11.2                 # cytoband → CNV region
 python scripts/gene_lookup.py SCN2A --json
 python scripts/gene_lookup.py --cnv 22q11.2 --copies 1
 python scripts/gene_lookup.py --list
 ```
 
-Returns syndrome, Tier 1 and Tier 2 domains, **sources to fetch**, gene-specific traps,
+- Returns syndrome, Tier 1 and Tier 2 domains, **sources to fetch**, gene-specific traps,
 and patient organisations. For an uncurated gene it returns a search order rather than
 nothing — because *"there is no published surveillance protocol for this gene"* is a
 useful answer families rarely get.
+
+- Lookups accept whichever word the person was actually given. A family arrives with
+"Rett" or "Cowden syndrome" at least as often as with MECP2 or PTEN, and falling through
+to "not in the curated index" for a syndrome that *is* curated is the worst kind of miss.
+CNV entries print their band and copy number in full (`Region: 16p11.2 · 3 copies —
+duplication`), because deletion and duplication of one band can have partly opposite
+phenotypes and that distinction must not depend on reading an entry key.
 
 ### `render_brief.py`
 
@@ -240,8 +292,11 @@ python scripts/render_brief.py findings.json --family-only
 ```
 
 Empty sections omit themselves — an empty "Surveillance" heading reading "none
-identified" is worse than no heading. A regex PHI check warns on MRN, DOB, NHS number,
-SSN-shaped strings and lab accession numbers before anything is written.
+identified" is worse than no heading — and what remains is spaced so that omissions leave
+no trace. A regex PHI check looks for MRN, DOB, NHS number, SSN-shaped strings and lab
+accession numbers, and **refuses to write the file** if it finds any; `--allow-phi`
+overrides deliberately, and rendering to stdout warns without blocking. Writing the file
+is the step that makes a leak durable, so that is the step that stops.
 
 ---
 
@@ -255,7 +310,8 @@ SSN-shaped strings and lab accession numbers before anything is written.
 6. **Abstain loudly when evidence is thin.** The FDA-cleared autism diagnostic aid Canvas Dx
    abstains on 37% of real-world cases ([*Scientific Reports*, 2025](https://www.nature.com/articles/s41598-025-15575-8)).
    Visible limits are why clinicians trust a tool.
-7. **De-identify by default.**
+7. **De-identify by default** — enforced in code, with limits worth knowing:
+   see [Data privacy and confidentiality](#data-privacy-and-confidentiality).
 8. **No unsourced risk numbers.** A remembered percentage is worse than none.
 
 Showing the reasoning for every assertion is also what keeps this inside the 21st Century
@@ -264,16 +320,82 @@ territory — the clinician can independently review the basis for everything it
 
 ---
 
+## Data privacy and confidentiality
+
+A genetic test report is among the most sensitive documents a person will ever hold. It
+concerns a named individual, it is frequently about a child, and it carries information
+about relatives who never consented to anything. **The redaction in these scripts is a
+safety net, not permission.** Read this section before putting real clinical material
+through this skill.
+
+### What the code actually does
+
+| Where | What it does |
+|---|---|
+| `parse_report.py` | Redacts name, DOB, MRN, NHS number, SSN-shaped strings, lab accession and email from every emitted context, by default. `--no-redact` opts out and is for synthetic reports. |
+| `parse_report.py` | Drops dates labelled as birth or collection dates entirely — they are wrong answers *and* identifiers, so they are never surfaced as candidates. |
+| `render_brief.py` | Scans the assembled document for the same identifier shapes and **refuses to write the file** if it finds any, unless `--allow-phi` is passed. |
+| `.gitignore` | Excludes `*.vcf`, `reports/`, `patient_data/`, `findings*.json` and `brief*.md` so working files do not reach version control by accident. |
+| Everywhere | No network calls carry report content. The scripts read local files and write local files; the agent fetches *guideline sources*, never anything derived from the report. |
+
+### What it does not do, and cannot
+
+- **Regex redaction is pattern-matching, not comprehension.** It catches labelled
+  identifiers. It will miss a name written in running prose ("Jack's results show…"),
+  an unlabelled phone number or address, a referring clinician or hospital, an unusual
+  date format, a label in another language, and anything mangled by OCR.
+- **De-identification is not anonymisation.** This is the part that matters most and is
+  most often glossed over: a variant is itself identifying. Genomic data is
+  re-identifiable in principle, and removing every name and number from a report does not
+  make the sequence data anonymous. Under GDPR it remains personal data and special
+  category data (Art. 9); under HIPAA, genetic information is PHI and is explicitly
+  covered by GINA. Treat parser output as identifiable health data no matter how clean it
+  looks.
+- **It says nothing about where the text goes.** Running this skill means the report's
+  content enters the context of whatever model is running the agent, and may be
+  transmitted, logged, or retained under that provider's terms — not under this
+  repository's. **That is a disclosure, and it is your decision to make, not the tool's.**
+  Check it against your provider's data-processing terms before any real report goes in.
+
+### If you are handling other people's reports
+
+- **Request for lawful consent when using real data**: patient consent or another Art. 6/Art. 9
+  basis under GDPR, a BAA under HIPAA, plus whatever your institution requires — a DPIA,
+  an IG review, an ethics approval for research use. A clinician's duty of confidence
+  applies to this tool exactly as it applies to any other disclosure.
+- **Work from a de-identified copy** wherever it is possible to make one. Redact before
+  the file reaches the parser rather than relying on the parser to redact after.
+- **A child's genetic data belongs to the child**, including the parts that will matter
+  to them as an adult. A parent can consent to processing today; that does not settle
+  what should be written down, retained, or shared later.
+- **Do not de-identify by removing only what you can see.** Family structure, a rare
+  syndrome plus a location, or a distinctive variant can identify a person on their own.
+- **Delete intermediates.** `findings*.json` and `brief*.md` are ignored by git but they
+  still exist on disk, and they contain everything.
+
+### If it is your own report, or your child's
+
+Then it is yours to share, and the practical advice is short: the redaction defaults are
+there to stop identifiers ending up in a file you later hand to someone else, and they
+are worth leaving on. Everything above about where the text goes still applies — the
+content reaches the model provider running the agent either way.
+
+**Nothing in this section is legal advice.** If real patient data is involved and you are
+not certain what applies to you, ask the person who is: your DPO, IG lead, privacy
+officer, or IRB.
+
+---
+
 ## Coverage
 
-25 genes and 6 recurrent CNV regions, chosen because published care guidance genuinely
+27 genes and 5 recurrent CNV regions, chosen because published care guidance genuinely
 exists — not to look comprehensive.
 
-**Tumour predisposition** — PTEN, TSC1/TSC2, NF1, DICER1
-**Recurrent CNVs** — 22q11.2 del, 16p11.2 del/dup, 15q11-q13 dup, 22q13 del
-**Channels / synaptic** — SCN2A, SCN1A, SCN8A, GRIN2A/2B, CACNA1C, STXBP1
-**Chromatin / scaffold** — MECP2, SHANK3, SYNGAP1, CHD8, ADNP, ARID1B, ANKRD11, DYRK1A, KMT2A, POGZ, MED13L
-**Other** — FMR1, UBE3A, NRXN1, PPP2R5D, SETD5, AUTS2
+- **Tumour predisposition** — PTEN, TSC1/TSC2, NF1, DICER1
+- **Recurrent CNVs** — 22q11.2 del, 16p11.2 del/dup, 15q11-q13 dup, 22q13 del
+- **Channels / synaptic** — SCN2A, SCN1A, SCN8A, GRIN2A/2B, CACNA1C, STXBP1
+- **Chromatin / scaffold** — MECP2, SHANK3, SYNGAP1, CHD8, ADNP, ARID1B, ANKRD11, DYRK1A, KMT2A, POGZ, MED13L
+- **Other** — FMR1, UBE3A, NRXN1, PPP2R5D, SETD5, AUTS2
 
 ### Adding a gene
 
@@ -305,12 +427,20 @@ python scripts/gene_lookup.py --list          # index integrity
 python scripts/parse_report.py --text "NM_000314.8(PTEN):c.697C>T (p.Arg233Ter), heterozygous, pathogenic, de novo"
 ```
 
-v1 was validated against four synthetic de-identified reports: a two-variant exome
-(pathogenic + VUS, block-structured), a 22q11.2 microarray, a negative 2021 microarray,
-and an inline HGVS string. All four parse correctly; the PHI check fires on injected
-identifiers.
+Validated against synthetic de-identified reports only: a two-variant exome (pathogenic +
+VUS, block-structured), a column-layout exome with the classification to the left of the
+variant, a 22q11.2 microarray in both ISCN and prose, a negative 2021 microarray, an
+FMR1 repeat-expansion report, annotated (SnpEff and VEP) and unannotated VCFs, and an
+inline HGVS string. Alongside those, the cases that must produce *nothing*: a sentence
+naming two different CNVs across a conjunction, and a negative report mentioning a band
+in a coverage statement.
 
-**Not yet tested against real reports.** That is the next step and the most important one.
+The PHI check fires on injected identifiers, and the parser's redaction is exercised
+against a header carrying name, DOB, MRN, accession and email.
+
+**Never tested against a real patient report, and testing against one is not a casual
+step** — see [Data privacy](#data-privacy-and-confidentiality) before using clinical
+material for this.
 
 ---
 
@@ -320,7 +450,11 @@ identifiers.
 - **The parser is regex-based.** It handles common report layouts; it will not handle every
   lab's format. It flags rather than guesses, but check its output against the source.
 - **No OCR.** Photographed reports need OCR first, then character-by-character verification
-  of the variant string.
+  of the variant string. OCR also defeats the identifier redaction, which matches labels
+  that OCR routinely mangles.
+- **Redaction is regex, and de-identified is not anonymous.** The parser strips labelled
+  identifiers, not every identifier, and genomic data is re-identifiable in principle
+  regardless. See [Data privacy and confidentiality](#data-privacy-and-confidentiality).
 - **Direction of effect is not inferred.** For SCN2A, SCN8A, GRIN2A/2B the skill states
   that gain- versus loss-of-function is clinically decisive and routes it to genetics.
   It does not guess, because guessing wrong inverts the treatment.
@@ -329,7 +463,7 @@ identifiers.
 
 ---
 
-## Evidence base
+## Citations
 
 | Claim | Source |
 |---|---|

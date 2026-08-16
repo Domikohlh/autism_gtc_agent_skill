@@ -9,10 +9,15 @@ unsure about. It is deliberately conservative — it would rather report
 `needs_review` than assert a wrong variant string. Always eyeball the output
 against the source before using it.
 
+Identifiers (name, DOB, MRN, NHS number, accession) are redacted from the
+emitted context by default, and dates labelled as birth or collection dates are
+never surfaced. Pass --no-redact only when debugging against a synthetic report.
+
 Usage:
     python parse_report.py report.pdf
     python parse_report.py report.txt --json out.json
     python parse_report.py --text "SCN2A c.5645G>A p.(Arg1882Gln) heterozygous, pathogenic"
+    python parse_report.py annotated.vcf
 """
 
 import argparse
@@ -39,8 +44,9 @@ HGVS_P = re.compile(
 )
 
 # Explicitly labelled gene field — the authoritative source when present.
+# The colon class covers the fullwidth variant, which turns up in PDF exports.
 GENE_LABEL = re.compile(
-    r"\bGene(?:\s*(?:name|symbol))?\s*[::]\s*(?P<gene>[A-Z][A-Z0-9\-]{1,9}(?:orf\d+)?)\b",
+    r"\bGene(?:\s*(?:name|symbol))?\s*[:：]\s*(?P<gene>[A-Z][A-Z0-9\-]{1,9}(?:orf\d+)?)\b",
     re.IGNORECASE,
 )
 
@@ -51,13 +57,81 @@ TRANSCRIPT = re.compile(r"\b(?P<transcript>N[MR]_\d+(?:\.\d+)?)\b")
 # used only as a last resort, filtered against a stop-list.
 GENE_TOKEN = re.compile(r"\b([A-Z][A-Z0-9]{1,9}(?:orf\d+)?)\b")
 
+# Cytoband, including the sex chromosomes.
+BAND = r"(?:\d{1,2}|[XY])[pq]\d{1,2}(?:\.\d+)?"
+
+# ISCN copy-number notation: the authoritative form when the report uses it.
 CNV = re.compile(
     r"(?:arr\s*)?\[?(?P<build>GRCh3[78]|hg19|hg38)?\]?\s*"
-    r"(?P<band>\d{1,2}[pq]\d{1,2}(?:\.\d+)?)\s*"
+    rf"(?P<band>{BAND})\s*"
     r"\(\s*(?P<start>[\d,]+)\s*[-_]\s*(?P<end>[\d,]+)\s*\)\s*"
     r"x\s*(?P<copies>\d)",
     re.IGNORECASE,
 )
+
+# Prose copy-number statements. Families paste these, and many reports word the
+# summary line this way even when the ISCN string appears elsewhere. Without
+# these the CNV never reaches gene_lookup.py --cnv, which is where the Tier 1
+# content for recurrent regions lives.
+#
+# What may sit between the band and the word "deletion" is a whitelist, not a
+# wildcard gap. A wildcard reads "a duplication at 16p11.2 and a deletion
+# involving Xp22.31" as a 16p11.2 deletion — inventing a finding, then routing
+# it to genuine Tier 1 surveillance content. That is the worst failure this
+# script could produce, and it is worth losing some unusual phrasings to avoid.
+_CNV_KIND = r"(?P<kind>microdeletion|microduplication|deletion|duplication|loss|gain)"
+_CNV_ADJ = (
+    r"(?:(?:interstitial|terminal|intragenic|heterozygous|homozygous|hemizygous|mosaic"
+    r"|recurrent|de\s+novo|apparently\s+balanced|likely\s+pathogenic|pathogenic"
+    r"|copy\s+number|chromosom(?:e|al))\s+){0,3}"
+)
+_CNV_PREP = r"\s+(?:at|of|in|on|involving|spanning|encompassing|within|affecting|includ\w+)(?:\s+the)?\s+"
+
+CNV_PROSE_SIZE_FIRST = re.compile(
+    r"\b(?P<size>\d+(?:\.\d+)?)\s*(?P<unit>kb|mb|bp)\b\s+" + _CNV_ADJ + _CNV_KIND
+    + _CNV_PREP + rf"(?P<band>{BAND})\b",
+    re.IGNORECASE,
+)
+CNV_PROSE_BAND_FIRST = re.compile(
+    rf"\b(?P<band>{BAND})\b\s+(?:region\s+|locus\s+)?" + _CNV_ADJ + _CNV_KIND,
+    re.IGNORECASE,
+)
+CNV_PROSE_KIND_FIRST = re.compile(
+    r"\b" + _CNV_ADJ + _CNV_KIND + _CNV_PREP + rf"(?P<band>{BAND})\b",
+    re.IGNORECASE,
+)
+
+# Repeat expansions. FMR1 is the canonical case: repeat sizing is a separate
+# assay, it is the single most-missed result in an autism/ID workup, and the
+# HGVS patterns above cannot see it at all.
+REPEAT_CUE = re.compile(
+    r"(?:\b(?P<motif>CGG|CAG|CTG|GAA|CCG|GCC)\s*(?:triplet\s*)?repeat"
+    r"|\(\s*(?P<motif2>[ACGT]{3,6})\s*\)\s*n"
+    r"|\brepeat\s+expansion\b|\btriplet\s+repeat\b|\brepeat\s+siz\w*\b"
+    r"|\brepeat\s+(?:analysis|number|length)\b)",
+    re.IGNORECASE,
+)
+REPEAT_COUNT = re.compile(
+    r"\b(?P<n>\d{1,4})\s*(?:CGG|CAG|CTG|GAA|CCG|GCC)?\s*repeats?\b", re.IGNORECASE
+)
+REPEAT_ALLELES = re.compile(
+    r"\balleles?\s*[:：]?\s*(?P<a>\d{1,4})\s*(?:and|,|/|&)\s*(?P<b>\d{1,4})", re.IGNORECASE
+)
+
+REPEAT_CATEGORIES = [
+    ("full mutation", "full mutation"),
+    ("pre-?mutation", "premutation"),
+    ("intermediate", "intermediate"),
+    ("gr[ea]y zone", "intermediate"),
+    ("normal range", "normal"),
+]
+
+METHYLATION = [
+    ("fully methylated", "fully methylated"),
+    ("partially methylated", "partially methylated"),
+    ("unmethylated", "unmethylated"),
+    ("methylation", "methylation assessed — read the source"),
+]
 
 CLASSIFICATIONS = [
     ("likely pathogenic", "Likely pathogenic"),
@@ -100,11 +174,31 @@ TEST_TYPES = [
     ("repeat expansion", "repeat expansion"),
 ]
 
-DATE = re.compile(
-    r"\b(\d{4}-\d{2}-\d{2}"
+DATE_SRC = (
+    r"\d{4}-\d{2}-\d{2}"
     r"|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"
-    r"|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}"
-    r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})\b",
+    r"|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}"
+    r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}"
+)
+DATE = re.compile(rf"\b(?:{DATE_SRC})\b", re.IGNORECASE)
+
+# Which date is the report date matters: staleness drives the reanalysis
+# recommendation, and the first date on a report is almost always the date of
+# birth. Both label sets are anchored to the text immediately preceding a date.
+REPORT_DATE_LABEL = re.compile(
+    r"(?:date\s+of\s+report|report(?:ing)?\s+date|date\s+report(?:ed)?|reported(?:\s+on)?"
+    r"|date\s+of\s+issue|date\s+issued|issued(?:\s+on)?|signed[\s-]?out(?:\s+on)?"
+    r"|authoris(?:ed|zed)(?:\s+on)?|results?\s+date|date\s+of\s+results?)"
+    r"\s*[:：]?\s*$",
+    re.IGNORECASE,
+)
+NON_REPORT_DATE_LABEL = re.compile(
+    r"(?:d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date|born(?:\s+on)?"
+    r"|date\s+of\s+collection|collect(?:ed|ion)(?:\s+date)?|date\s+collected"
+    r"|receiv(?:ed|al)(?:\s+date)?|date\s+received|drawn(?:\s+on)?|date\s+drawn"
+    r"|accession(?:\s+date)?|specimen\s+date|sample\s+date"
+    r"|referral\s+date|date\s+of\s+referral|requested(?:\s+on)?|date\s+requested)"
+    r"\s*[:：]?\s*$",
     re.IGNORECASE,
 )
 
@@ -123,7 +217,47 @@ GENE_STOPLIST = {
     "PDF", "USA", "UK", "MD", "PHD", "MS", "MSC", "BSC", "II", "III", "IV",
     "A", "T", "C", "G", "N", "X", "Y", "AD", "AR", "XL", "XLR", "XLD", "IGV",
     "HGVS", "LOH", "AOH", "UPD", "FDA", "NHS", "EDTA", "GT", "AF", "DP",
+    "CHROM", "POS", "QUAL", "FILTER", "INFO", "FORMAT", "PASS", "VCF", "ANN",
+    "CSQ", "CLNSIG", "MODERATE", "HIGH", "LOW",
 }
+
+# --------------------------------------------------------------------------
+# De-identification
+# --------------------------------------------------------------------------
+
+# Applied to every context string before it leaves this script. The parser's
+# JSON is the artefact most likely to be written to disk, so it must not carry
+# identifiers out of the report (guardrail 7 in SKILL.md).
+#
+# Order matters. The labelled identifiers are removed first, so that by the time
+# the name rule runs, a following "DOB:" or "MRN:" has already become a bracketed
+# placeholder and cannot be mistaken for another word of the name. Nothing here
+# consumes to end of line: contexts are whitespace-joined before redaction, so a
+# greedy rule would eat the variant along with the identifier.
+PHI_REDACTIONS = [
+    (re.compile(rf"\b(?:d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date)\s*[:：]?\s*(?:{DATE_SRC})",
+                re.IGNORECASE), "[DOB REDACTED]"),
+    (re.compile(r"\b(?:MRN|medical\s+record\s*(?:no\.?|number|#)?)\s*[:：#]?\s*[\w-]+", re.IGNORECASE),
+     "[MRN REDACTED]"),
+    (re.compile(r"\bNHS\s*(?:no\.?|number)?\s*[:：]?\s*\d[\d ]{8,12}", re.IGNORECASE),
+     "[NHS NUMBER REDACTED]"),
+    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[SSN-SHAPED REDACTED]"),
+    (re.compile(r"\b(?:accession|specimen|sample)\s*(?:no\.?|number|id|#)?\s*[:：#]\s*[A-Z0-9][A-Z0-9\-]{3,}",
+                re.IGNORECASE), "[ACCESSION REDACTED]"),
+    (re.compile(r"\b[\w.\-]+@[\w\-]+\.[A-Za-z]{2,}\b"), "[EMAIL REDACTED]"),
+    # "Gene name:" is a real field on many reports, so only `patient` triggers
+    # the name rule mid-line; a bare "Name:" is only honoured at line start.
+    (re.compile(r"\b(?:patient(?:'s)?(?:\s+name)?|pt\.?\s+name)\s*[:：]\s*"
+                r"(?:[A-Z][\w'’\-]*,?\s*){1,4}", re.IGNORECASE), "[NAME REDACTED] "),
+    (re.compile(r"(?:^|\n)[ \t]*name\s*[:：]\s*(?:[A-Z][\w'’\-]*,?\s*){1,4}", re.IGNORECASE),
+     "\n[NAME REDACTED] "),
+]
+
+
+def redact(text: str) -> str:
+    for pattern, replacement in PHI_REDACTIONS:
+        text = pattern.sub(replacement, text)
+    return text
 
 
 # --------------------------------------------------------------------------
@@ -136,6 +270,7 @@ class Variant:
     transcript: str | None = None
     hgvs_c: str | None = None
     hgvs_p: str | None = None
+    genomic: str | None = None
     classification: str | None = None
     zygosity: str | None = None
     inheritance: str | None = None
@@ -150,9 +285,23 @@ class CopyNumberVariant:
     start: int | None = None
     end: int | None = None
     copies: int | None = None
+    kind: str | None = None
     size_bp: int | None = None
     classification: str | None = None
+    provenance: str = "ISCN notation"
     raw_context: str = ""
+    needs_review: list[str] = field(default_factory=list)
+
+
+@dataclass
+class RepeatExpansion:
+    gene: str | None = None
+    motif: str | None = None
+    allele_sizes: list[int] = field(default_factory=list)
+    category: str | None = None
+    methylation: str | None = None
+    raw_context: str = ""
+    needs_review: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -160,8 +309,10 @@ class ReportRecord:
     source_file: str | None = None
     test_type: str | None = None
     report_date: str | None = None
+    report_date_provenance: str | None = None
     variants: list[Variant] = field(default_factory=list)
     cnvs: list[CopyNumberVariant] = field(default_factory=list)
+    repeats: list[RepeatExpansion] = field(default_factory=list)
     secondary_findings_mentioned: bool = False
     candidate_dates: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -175,8 +326,6 @@ def read_text(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         return read_pdf(path)
-    if suffix == ".vcf":
-        return path.read_text(errors="replace")
     return path.read_text(errors="replace")
 
 
@@ -207,13 +356,38 @@ def read_pdf(path: Path) -> str:
 # --------------------------------------------------------------------------
 
 def find_first(text: str, patterns: list[tuple[str, str]]) -> str | None:
-    """Return the label of the earliest-matching pattern in `text`."""
+    """
+    Return the label of the earliest-matching pattern in `text`.
+
+    Ties on start position are broken towards the longer match, so "likely
+    pathogenic" wins over the "pathogenic" nested inside it.
+    """
     lowered = text.lower()
-    best: tuple[int, str] | None = None
+    best: tuple[tuple[int, int], str] | None = None
     for pattern, label in patterns:
         m = re.search(pattern, lowered)
-        if m and (best is None or m.start() < best[0]):
-            best = (m.start(), label)
+        if m:
+            key = (m.start(), -m.end())
+            if best is None or key < best[0]:
+                best = (key, label)
+    return best[1] if best else None
+
+
+def find_last(text: str, patterns: list[tuple[str, str]]) -> str | None:
+    """
+    Return the label of the latest-matching pattern in `text`.
+
+    Used when reading backwards from a variant in a column layout: the nearest
+    preceding match is the one belonging to this row. Ties on end position are
+    broken towards the longer match, for the same reason as `find_first`.
+    """
+    lowered = text.lower()
+    best: tuple[tuple[int, int], str] | None = None
+    for pattern, label in patterns:
+        for m in re.finditer(pattern, lowered):
+            key = (m.end(), -m.start())
+            if best is None or key > best[0]:
+                best = (key, label)
     return best[1] if best else None
 
 
@@ -249,6 +423,29 @@ def resolve_gene(before: str, inline: str | None) -> tuple[str | None, str]:
     return None, "not found"
 
 
+def classify_dates(text: str) -> tuple[list[str], list[str], list[str]]:
+    """
+    Split the dates in a document into (report-labelled, birth/collection, unlabelled).
+
+    The first date on a report is usually the date of birth. Taking it as the
+    report date inverts the staleness judgement in SKILL.md Step 5 — an eight
+    year old "report" that is actually two years old, or the reverse — so the
+    label preceding each date decides which bucket it lands in.
+    """
+    labelled: list[str] = []
+    excluded: list[str] = []
+    unlabelled: list[str] = []
+    for m in DATE.finditer(text):
+        prefix = text[max(0, m.start() - 48):m.start()]
+        if REPORT_DATE_LABEL.search(prefix):
+            labelled.append(m.group(0))
+        elif NON_REPORT_DATE_LABEL.search(prefix):
+            excluded.append(m.group(0))
+        else:
+            unlabelled.append(m.group(0))
+    return labelled, excluded, unlabelled
+
+
 def parse_variants(text: str) -> list[Variant]:
     """
     Segment the document into one block per variant before extracting fields.
@@ -260,7 +457,9 @@ def parse_variants(text: str) -> list[Variant]:
     Each block runs from the end of the previous HGVS match to the start of the
     next one. Within a block: gene and transcript are read backwards from the
     variant (they precede it in report layout); classification, zygosity,
-    inheritance and the protein change are read forwards.
+    inheritance and the protein change are read forwards, then backwards as a
+    flagged fallback for column layouts, where the classification and zygosity
+    columns sit to the LEFT of the variant column.
     """
     matches = list(HGVS_C.finditer(text))
     variants: list[Variant] = []
@@ -292,6 +491,21 @@ def parse_variants(text: str) -> list[Variant]:
         p_match = HGVS_P.search(after) or HGVS_P.search(before)
         if p_match:
             v.hgvs_p = "p." + p_match.group("p")
+
+        if not v.classification:
+            v.classification = find_last(before, CLASSIFICATIONS)
+            if v.classification:
+                v.needs_review.append(
+                    f"classification '{v.classification}' read from text BEFORE the variant "
+                    "(column layout) — confirm it belongs to this row and not to prose"
+                )
+        if not v.zygosity:
+            v.zygosity = find_last(before, ZYGOSITY)
+            if v.zygosity:
+                v.needs_review.append(
+                    f"zygosity '{v.zygosity}' read from text BEFORE the variant "
+                    "(column layout) — confirm it belongs to this row"
+                )
 
         if provenance == "inferred from surrounding text":
             v.needs_review.append("gene symbol inferred from surrounding text — verify against source")
@@ -328,24 +542,292 @@ def dedupe_variants(variants: list[Variant]) -> list[Variant]:
 
 
 def parse_cnvs(text: str) -> list[CopyNumberVariant]:
-    cnvs = []
+    cnvs: list[CopyNumberVariant] = []
     for m in CNV.finditer(text):
         ctx = window(text, m.start(), m.end())
         start = int(m.group("start").replace(",", ""))
         end = int(m.group("end").replace(",", ""))
-        cnvs.append(
-            CopyNumberVariant(
-                band=m.group("band"),
-                build=m.group("build"),
-                start=start,
-                end=end,
-                copies=int(m.group("copies")),
-                size_bp=abs(end - start),
-                classification=find_first(ctx, CLASSIFICATIONS),
-                raw_context=ctx,
-            )
+        copies = int(m.group("copies"))
+        cnv = CopyNumberVariant(
+            band=m.group("band"),
+            build=m.group("build"),
+            start=start,
+            end=end,
+            copies=copies,
+            kind="deletion" if copies < 2 else "duplication" if copies > 2 else None,
+            size_bp=abs(end - start),
+            classification=find_first(ctx, CLASSIFICATIONS),
+            provenance="ISCN notation",
+            raw_context=ctx,
         )
+        if not m.group("build"):
+            cnv.needs_review.append(
+                "no genome build stated — GRCh37 and GRCh38 coordinates differ, "
+                "and a mismatch breaks recurrent-region matching"
+            )
+        cnvs.append(cnv)
+
+    cnvs.extend(parse_prose_cnvs(text, iscn_bands=[c.band for c in cnvs if c.band]))
     return cnvs
+
+
+def same_region(a: str | None, b: str | None) -> bool:
+    """
+    Whether two cytoband strings refer to the same region.
+
+    One report sentence routinely names a region twice at different precision —
+    "a 2.6 Mb deletion at 22q11.21 … the recurrent 22q11.2 deletion" — and two
+    records for one finding would read as two findings.
+    """
+    if not a or not b:
+        return False
+    a, b = a.lower(), b.lower()
+    return a.startswith(b) or b.startswith(a)
+
+
+def parse_prose_cnvs(text: str, iscn_bands: list[str]) -> list[CopyNumberVariant]:
+    """
+    Pick up copy-number statements written as prose rather than ISCN.
+
+    Copy number is deliberately left null here: "deletion" in prose does not
+    distinguish a heterozygous from a homozygous loss, and asserting `copies`
+    from a word would be exactly the kind of quiet wrong answer this parser is
+    built to avoid. `kind` is enough to route to gene_lookup.py --cnv.
+    """
+    candidates: list[CopyNumberVariant] = []
+
+    for pattern in (CNV_PROSE_SIZE_FIRST, CNV_PROSE_BAND_FIRST, CNV_PROSE_KIND_FIRST):
+        for m in pattern.finditer(text):
+            band = m.group("band")
+            kind = m.group("kind").lower()
+            kind = "deletion" if kind in ("deletion", "microdeletion", "loss") else "duplication"
+
+            size_bp = None
+            groups = m.groupdict()
+            if groups.get("size"):
+                unit = (groups.get("unit") or "bp").lower()
+                factor = {"bp": 1, "kb": 1_000, "mb": 1_000_000}[unit]
+                size_bp = int(float(groups["size"]) * factor)
+
+            ctx = window(text, m.start(), m.end())
+            candidates.append(
+                CopyNumberVariant(
+                    band=band,
+                    kind=kind,
+                    size_bp=size_bp,
+                    classification=find_first(ctx, CLASSIFICATIONS),
+                    provenance="prose description",
+                    raw_context=ctx,
+                    needs_review=[
+                        "read from prose, not ISCN notation — copy number and coordinates "
+                        "were not stated; confirm against the cytogenetics section"
+                    ],
+                )
+            )
+
+    # Prefer the most precise band, and the record that carries a size with it.
+    candidates.sort(key=lambda c: (-len(c.band or ""), c.size_bp is None))
+
+    kept: list[CopyNumberVariant] = []
+    for c in candidates:
+        if any(same_region(c.band, b) for b in iscn_bands):
+            continue  # the ISCN record for this region is authoritative
+        if any(k.kind == c.kind and same_region(k.band, c.band) for k in kept):
+            continue
+        kept.append(c)
+    return kept
+
+
+def parse_repeats(text: str) -> list[RepeatExpansion]:
+    """
+    Extract repeat-expansion results, which the HGVS patterns cannot see.
+
+    This matters most for FMR1: repeat sizing is a separate assay, a negative
+    exome does not exclude Fragile X, and a report that contains only a repeat
+    result would otherwise come back as "no variants detected" — the most
+    misleading output this parser could produce.
+
+    Sizes are reported, never interpreted. Category thresholds are gene- and
+    assay-specific and belong to the source.
+    """
+    cues = list(REPEAT_CUE.finditer(text))
+    if not cues:
+        return []
+
+    # Group cues that sit close together — one result section, not one per phrase.
+    clusters: list[list[int]] = []
+    for m in cues:
+        if clusters and m.start() - clusters[-1][1] < 400:
+            clusters[-1][1] = m.end()
+        else:
+            clusters.append([m.start(), m.end()])
+
+    repeats: list[RepeatExpansion] = []
+    for start, end in clusters:
+        ctx = window(text, start, end, pad=260)
+        gene, provenance = resolve_gene(text[:start], None)
+
+        sizes: list[int] = []
+        alleles = REPEAT_ALLELES.search(ctx)
+        if alleles:
+            sizes = [int(alleles.group("a")), int(alleles.group("b"))]
+        else:
+            sizes = [int(c.group("n")) for c in REPEAT_COUNT.finditer(ctx)]
+        sizes = sorted(dict.fromkeys(sizes))[:4]
+
+        motif = None
+        for m in REPEAT_CUE.finditer(text[start:end + 1]):
+            motif = m.group("motif") or m.group("motif2")
+            if motif:
+                motif = motif.upper()
+                break
+
+        r = RepeatExpansion(
+            gene=gene,
+            motif=motif,
+            allele_sizes=sizes,
+            category=find_first(ctx, REPEAT_CATEGORIES),
+            methylation=find_first(ctx, METHYLATION),
+            raw_context=ctx,
+            needs_review=[
+                "repeat size thresholds are gene- and assay-specific — do not interpret "
+                "a repeat number without the reporting laboratory's own ranges"
+            ],
+        )
+        if provenance in ("inferred from surrounding text", "not found"):
+            r.needs_review.append(
+                "gene for this repeat result was not read from a label — verify against source"
+            )
+        if not sizes:
+            r.needs_review.append("no repeat size found — read the source")
+        repeats.append(r)
+
+    return repeats
+
+
+# --------------------------------------------------------------------------
+# VCF
+# --------------------------------------------------------------------------
+
+# SnpEff ANN field order is fixed by its specification.
+ANN_GENE, ANN_FEATURE, ANN_HGVS_C, ANN_HGVS_P = 3, 6, 9, 10
+
+MAX_VCF_RECORDS = 200
+
+
+def zygosity_from_gt(gt: str, chrom: str) -> str | None:
+    alleles = [a for a in re.split(r"[/|]", gt) if a]
+    if not alleles or any(a == "." for a in alleles):
+        return None
+    if len(alleles) == 1:
+        return "hemizygous" if chrom.upper().removeprefix("CHR") in {"X", "Y"} else None
+    if len(set(alleles)) == 1:
+        return None if alleles[0] == "0" else "homozygous"
+    if "0" in alleles:
+        return "heterozygous"
+    return "compound heterozygous"  # two different alt alleles, e.g. 1/2
+
+
+def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
+    """
+    Parse a VCF into the same record shape.
+
+    A VCF is not a clinical report: unless it carries VEP/SnpEff annotation it
+    has no gene symbol, no HGVS and no classification, and even annotated it has
+    no interpretation. That gap is stated in `warnings` rather than papered over.
+    """
+    rec = ReportRecord(source_file=source)
+    csq_fields: list[str] | None = None
+    unannotated = 0
+
+    for line in text.splitlines():
+        if line.startswith("##"):
+            if "ID=CSQ" in line and "Format:" in line:
+                fmt = line.split("Format:", 1)[1].strip().rstrip('">')
+                csq_fields = [f.strip() for f in fmt.split("|")]
+            continue
+        if line.startswith("#") or not line.strip():
+            continue
+
+        cols = line.rstrip("\n").split("\t")
+        if len(cols) < 8:
+            continue
+        if len(rec.variants) >= MAX_VCF_RECORDS:
+            rec.warnings.append(
+                f"Stopped after {MAX_VCF_RECORDS} records. This looks like an unfiltered "
+                "VCF rather than a reported result set — work from the lab's report."
+            )
+            break
+
+        chrom, pos, _id, ref, alt, _qual, _filt, info = cols[:8]
+        info_map = dict(
+            (kv.split("=", 1) + [""])[:2] if "=" in kv else (kv, "")
+            for kv in info.split(";") if kv
+        )
+
+        v = Variant(genomic=f"{chrom}:{pos}{ref}>{alt}")
+
+        ann = info_map.get("ANN") or info_map.get("EFF")
+        csq = info_map.get("CSQ")
+        if ann:
+            fields = ann.split(",")[0].split("|")
+            if len(fields) > ANN_HGVS_P:
+                v.gene = fields[ANN_GENE].upper() or None
+                v.transcript = fields[ANN_FEATURE] or None
+                v.hgvs_c = fields[ANN_HGVS_C] or None
+                v.hgvs_p = fields[ANN_HGVS_P] or None
+        elif csq and csq_fields:
+            values = csq.split(",")[0].split("|")
+            picked = dict(zip(csq_fields, values))
+            v.gene = (picked.get("SYMBOL") or "").upper() or None
+            v.transcript = picked.get("Feature") or None
+            hgvs_c = picked.get("HGVSc") or ""
+            hgvs_p = picked.get("HGVSp") or ""
+            v.hgvs_c = hgvs_c.split(":")[-1] or None
+            v.hgvs_p = hgvs_p.split(":")[-1] or None
+            if hgvs_c and ":" in hgvs_c and not v.transcript:
+                v.transcript = hgvs_c.split(":")[0]
+
+        clnsig = info_map.get("CLNSIG")
+        if clnsig:
+            v.classification = find_first(clnsig.replace("_", " "), CLASSIFICATIONS)
+
+        if len(cols) >= 10:
+            keys = cols[8].split(":")
+            if "GT" in keys:
+                sample = cols[9].split(":")
+                idx = keys.index("GT")
+                if idx < len(sample):
+                    v.zygosity = zygosity_from_gt(sample[idx], chrom)
+
+        if not v.gene:
+            unannotated += 1
+            v.needs_review.append(
+                "no gene annotation on this VCF record — annotate (VEP/SnpEff) or work "
+                "from the laboratory report"
+            )
+        if not v.classification:
+            v.needs_review.append("no classification in this VCF — a VCF does not carry one")
+        if not v.zygosity:
+            v.needs_review.append("zygosity not derivable — no usable GT field")
+
+        v.raw_context = " ".join(line.split())[:400]
+        rec.variants.append(v)
+
+    rec.warnings.append(
+        "Input was a VCF. A VCF carries no interpretation: classification, inheritance, "
+        "phenotype and secondary-finding status live in the laboratory's report, not here. "
+        "Ask for the report before writing anything clinical."
+    )
+    if unannotated:
+        rec.warnings.append(
+            f"{unannotated} record(s) had no gene annotation — gene, HGVS and consequence "
+            "could not be derived."
+        )
+    if not rec.variants:
+        rec.warnings.append("No VCF data lines found.")
+
+    return rec
 
 
 # --------------------------------------------------------------------------
@@ -358,20 +840,44 @@ def parse(text: str, source: str | None = None) -> ReportRecord:
     rec.test_type = find_first(text, TEST_TYPES)
     rec.variants = parse_variants(text)
     rec.cnvs = parse_cnvs(text)
+    rec.repeats = parse_repeats(text)
 
     lowered = text.lower()
     rec.secondary_findings_mentioned = any(cue in lowered for cue in SECONDARY_FINDING_CUES)
 
-    dates = DATE.findall(text)
-    rec.candidate_dates = list(dict.fromkeys(dates))[:6]
-    if rec.candidate_dates:
-        rec.report_date = rec.candidate_dates[0]
-
-    if not rec.variants and not rec.cnvs:
+    labelled, excluded, unlabelled = classify_dates(text)
+    # Birth and collection dates are identifiers as well as wrong answers, so
+    # they are dropped rather than offered as candidates.
+    rec.candidate_dates = list(dict.fromkeys(labelled + unlabelled))[:6]
+    if labelled:
+        rec.report_date = labelled[0]
+        rec.report_date_provenance = "labelled report-date field"
+    elif unlabelled:
+        rec.report_date = unlabelled[0]
+        rec.report_date_provenance = "unlabelled date — first in document, not verified"
         rec.warnings.append(
-            "No variants or CNVs detected. The report may be negative, may be an image "
-            "requiring OCR, or may use a format this parser does not recognise. "
-            "Read it directly."
+            "Report date was not labelled. The date shown is the first unlabelled date in "
+            "the document and may be something else entirely. Confirm it before judging "
+            "whether the report is stale."
+        )
+    else:
+        rec.report_date_provenance = "not found"
+
+    if excluded:
+        rec.warnings.append(
+            f"{len(excluded)} date(s) labelled as birth or collection dates were excluded "
+            "from this output as identifiers."
+        )
+
+    return finalise_warnings(rec)
+
+
+def finalise_warnings(rec: ReportRecord) -> ReportRecord:
+    if not rec.variants and not rec.cnvs and not rec.repeats:
+        rec.warnings.append(
+            "No variants, CNVs or repeat expansions detected. The report may be negative, "
+            "may be an image requiring OCR, or may use a format this parser does not "
+            "recognise. Read it directly."
         )
     if not rec.test_type:
         rec.warnings.append(
@@ -391,8 +897,36 @@ def parse(text: str, source: str | None = None) -> ReportRecord:
             "At least one gene symbol was inferred rather than read from a transcript. "
             "Verify against the source before using."
         )
-
+    if any("read from text BEFORE" in w for v in rec.variants for w in v.needs_review):
+        rec.warnings.append(
+            "At least one classification or zygosity was read from text preceding its "
+            "variant (column layout). Check each against the source row."
+        )
+    if rec.repeats and any(
+        (r.gene or "").upper() == "FMR1" or (r.motif or "") == "CGG" for r in rec.repeats
+    ):
+        rec.warnings.append(
+            "Repeat expansion result present. Repeat sizing is a separate assay from "
+            "sequencing — see the FMR1 trap in references/gene_index.md."
+        )
     return rec
+
+
+def redact_record(rec: ReportRecord) -> ReportRecord:
+    for v in rec.variants:
+        v.raw_context = redact(v.raw_context)
+    for c in rec.cnvs:
+        c.raw_context = redact(c.raw_context)
+    for r in rec.repeats:
+        r.raw_context = redact(r.raw_context)
+    return rec
+
+
+def parse_path(path: Path) -> ReportRecord:
+    text = read_text(path)
+    if path.suffix.lower() == ".vcf" or text.lstrip().startswith("##fileformat=VCF"):
+        return finalise_warnings(parse_vcf(text, source=str(path)))
+    return parse(text, source=str(path))
 
 
 def main() -> int:
@@ -400,6 +934,10 @@ def main() -> int:
     ap.add_argument("path", nargs="?", help="Report file (.pdf, .txt, .vcf)")
     ap.add_argument("--text", help="Parse a literal string instead of a file")
     ap.add_argument("--json", help="Write JSON to this path instead of stdout")
+    ap.add_argument(
+        "--no-redact", action="store_true",
+        help="Keep identifiers in the emitted context (debugging synthetic reports only)",
+    )
     args = ap.parse_args()
 
     if args.text:
@@ -409,15 +947,23 @@ def main() -> int:
         if not path.exists():
             print(f"error: {path} not found", file=sys.stderr)
             return 1
-        record = parse(read_text(path), source=str(path))
+        record = parse_path(path)
     else:
         ap.error("provide a file path or --text")
         return 2
+
+    if not args.no_redact:
+        record = redact_record(record)
 
     payload = json.dumps(asdict(record), indent=2)
     if args.json:
         Path(args.json).write_text(payload)
         print(f"wrote {args.json}")
+        if args.no_redact:
+            print(
+                "warning: --no-redact was used, so this file may contain identifiers.",
+                file=sys.stderr,
+            )
     else:
         print(payload)
     return 0

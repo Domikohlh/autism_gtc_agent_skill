@@ -10,8 +10,14 @@ It does NOT return screening ages, intervals, modalities, or drug doses. Those
 drift between guideline versions and must be read from the cited source with a
 retrieval date. See references/risk_layer_policy.md.
 
+Accepts a gene symbol, a syndrome name, an alias, or a cytoband — people arrive
+with whichever of those the report or the clinician gave them.
+
 Usage:
     python gene_lookup.py PTEN
+    python gene_lookup.py "Cowden syndrome"      # alias → PTEN
+    python gene_lookup.py Rett                   # syndrome name → MECP2
+    python gene_lookup.py 22q11.2                # cytoband → CNV region
     python gene_lookup.py SCN2A --json
     python gene_lookup.py --cnv 22q11.2 --copies 1
     python gene_lookup.py --list
@@ -19,10 +25,13 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 INDEX_PATH = Path(__file__).resolve().parent.parent / "assets" / "gene_index.json"
+
+CYTOBAND = re.compile(r"(?:\d{1,2}|[XY])[pq]\d{1,2}(?:\.\d+)?", re.IGNORECASE)
 
 NOT_FOUND_GUIDANCE = """\
 Not in the curated index. That does not mean there is no guidance — it means
@@ -55,12 +64,47 @@ def resolve(index: dict, gene: str) -> tuple[str, dict] | None:
     entry = genes[key]
     seen = {key}
     while "same_as" in entry:
-        key = entry["same_as"]
-        if key in seen:  # cycle guard
+        target = entry["same_as"]
+        if target in seen or target not in genes:  # cycle / dangling alias guard
             break
-        seen.add(key)
-        entry = genes[key]
+        seen.add(target)
+        key, entry = target, genes[target]
     return key, entry
+
+
+def search_by_name(index: dict, query: str) -> list[tuple[str, dict, str]]:
+    """
+    Find entries by syndrome name or alias.
+
+    People arrive with the word they were given, and it is at least as often
+    "Rett" or "Cowden syndrome" as it is MECP2 or PTEN — SKILL.md's own trigger
+    list includes syndrome names. Falling through to "not in the curated index"
+    for a syndrome that *is* curated is the worst kind of miss, because the
+    answer was sitting right there.
+
+    Returns (key, entry, what matched).
+    """
+    q = query.strip().lower()
+    if len(q) < 3:
+        return []
+
+    hits: list[tuple[str, dict, str]] = []
+    for section in ("genes", "cnv_regions"):
+        for key, entry in index[section].items():
+            if "same_as" in entry:
+                continue  # the alias target carries the content
+            syndrome = (entry.get("syndrome") or "").lower()
+            if q in syndrome:
+                hits.append((key, entry, f"syndrome name '{entry['syndrome']}'"))
+                continue
+            for alias in entry.get("aliases", []):
+                if q in alias.lower():
+                    hits.append((key, entry, f"alias '{alias}'"))
+                    break
+            else:
+                if q in key.lower().replace("_", " "):
+                    hits.append((key, entry, f"region name '{key}'"))
+    return hits
 
 
 def match_cnv(index: dict, band: str, copies: int | None) -> list[tuple[str, dict]]:
@@ -73,14 +117,34 @@ def match_cnv(index: dict, band: str, copies: int | None) -> list[tuple[str, dic
     return hits
 
 
-def render(name: str, entry: dict, resolved_from: str | None = None) -> str:
+COPY_LABELS = {
+    0: "0 copies — homozygous loss",
+    1: "1 copy — deletion",
+    3: "3 copies — duplication",
+    4: "4 copies — duplication",
+}
+
+
+def render(name: str, entry: dict, resolved_from: str | None = None,
+           matched_on: str | None = None) -> str:
     lines: list[str] = []
     header = f"## {name} — {entry.get('syndrome', 'syndrome not recorded')}"
     lines.append(header)
     if resolved_from and resolved_from != name:
         lines.append(f"_(resolved from {resolved_from})_")
+    if matched_on:
+        lines.append(f"_(matched on {matched_on})_")
     if entry.get("aliases"):
         lines.append(f"Also known as: {', '.join(entry['aliases'])}")
+    # Spelled out for CNV regions: deletion and duplication of the same band can
+    # have partly opposite phenotypes, so which one this is must not depend on
+    # the reader parsing the entry key.
+    if entry.get("band"):
+        copies = entry.get("copies")
+        lines.append(
+            f"Region: {entry['band']} · "
+            + COPY_LABELS.get(copies, f"{copies} copies" if copies else "copy number not recorded")
+        )
     lines.append("")
 
     t1 = entry.get("tier1_domains") or []
@@ -185,16 +249,39 @@ def main() -> int:
         return 2
 
     found = resolve(index, args.gene)
-    if not found:
-        print(f"{args.gene.upper()}: not in the curated index.\n")
-        print(NOT_FOUND_GUIDANCE)
+    if found:
+        key, entry = found
+        if args.json:
+            print(json.dumps({key: entry}, indent=2))
+        else:
+            print(render(key, entry, resolved_from=args.gene.upper()))
         return 0
 
-    key, entry = found
-    if args.json:
-        print(json.dumps({key: entry}, indent=2))
-    else:
-        print(render(key, entry, resolved_from=args.gene.upper()))
+    # Not a curated gene symbol. Before giving up, try the two other things the
+    # query could be: a cytoband, or a syndrome name / alias.
+    if CYTOBAND.fullmatch(args.gene.strip()):
+        hits = match_cnv(index, args.gene, args.copies)
+        if hits:
+            if args.json:
+                print(json.dumps({k: v for k, v in hits}, indent=2))
+                return 0
+            for key, region in hits:
+                print(render(key, region, matched_on=f"cytoband '{args.gene}'"))
+                print()
+            return 0
+
+    named = search_by_name(index, args.gene)
+    if named:
+        if args.json:
+            print(json.dumps({k: v for k, v, _ in named}, indent=2))
+            return 0
+        for key, entry, matched_on in named:
+            print(render(key, entry, matched_on=matched_on))
+            print()
+        return 0
+
+    print(f"{args.gene.upper()}: not in the curated index.\n")
+    print(NOT_FOUND_GUIDANCE)
     return 0
 
 
