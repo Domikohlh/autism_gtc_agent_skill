@@ -1,0 +1,198 @@
+# Risk Layer Policy
+
+How to handle "what else might this person develop?" — the highest-value and
+highest-risk part of this skill.
+
+---
+
+## The governing question
+
+Before writing any statement about future disease risk, ask:
+
+> **Is there a published protocol or guideline that defines an action?**
+
+- **Yes** → Tier 1. Include it prominently. This is why the tool exists.
+- **No, but there is documented elevated risk worth watching for** → Tier 2. Include,
+  carefully framed.
+- **No** → Tier 3. Say nothing. Do not generate a risk estimate.
+
+Everything below elaborates that one question.
+
+---
+
+## Tier 1 — Established surveillance protocols
+
+**Definition:** the gene or CNV is associated with a syndrome that has a published
+surveillance or management protocol specifying what to monitor, by what modality, and
+starting at what age.
+
+**These are not predictions. They are standard of care.** A child with a pathogenic PTEN
+variant needs thyroid surveillance from childhood; that is not fortune-telling, it is a
+published protocol that prevents harm. Omitting it because it feels like "predicting
+disease" would be the actual failure.
+
+**Include prominently, and specifically.** For each Tier 1 finding, state:
+
+1. What the protocol covers (organ systems / conditions)
+2. The named source document and its year
+3. That the specifics — ages, intervals, modalities — must come from that document or
+   the clinical genetics team
+4. Who typically coordinates it (often clinical genetics, sometimes a specialist clinic)
+
+**Retrieve the specifics; never recall them.** Fetch the guideline and quote it with a
+retrieval date. If you cannot reach it, name the document and stop there. A remembered
+screening age is worse than no screening age, because the family may act on it.
+
+**Canonical Tier 1 examples** (see `gene_index.md` for sources):
+
+| Gene / region | Surveillance domains |
+|---|---|
+| PTEN | Thyroid, breast, renal, endometrial, colorectal, skin — protocol starts in childhood |
+| TSC1 / TSC2 | Renal angiomyolipoma, SEGA, cardiac rhabdomyoma, pulmonary LAM, epilepsy, skin |
+| NF1 | Optic pathway glioma, plexiform neurofibroma, MPNST, blood pressure, skeletal |
+| DICER1 | Pleuropulmonary blastoma, thyroid, ovarian |
+| 22q11.2 deletion | Cardiac, immune/thymic, calcium/parathyroid, palate, hearing, later psychiatric |
+| MECP2 (Rett) | Cardiac QT, scoliosis, breathing dysrhythmia, bone density, nutrition |
+| Ion channel genes with cardiac involvement (e.g. CACNA1C) | Cardiac conduction — urgent if suspected |
+
+**The framing that works:**
+
+> "This gene is associated with [syndrome], which has a published surveillance protocol
+> covering [domains]. This is standard care, not a prediction — the protocol exists so
+> that if anything develops, it is caught early. The specifics are set out in
+> [document, year]; your genetics team will set up the schedule."
+
+That framing gives the family the actionable fact, tells them why it isn't alarming, and
+routes the specifics correctly.
+
+---
+
+## Tier 2 — Elevated risk, monitoring value, no formal protocol
+
+**Definition:** documented association with a condition, meaningful enough to be worth
+raising, but without a defined surveillance schedule.
+
+**Include, but frame as awareness rather than prediction.** These are things where a
+family knowing "watch for this, and mention it if you see it" genuinely shortens the
+path to help — because the alternative is the symptom being attributed to autism and
+never investigated. That mis-attribution is a well-documented harm in autistic
+healthcare, and Tier 2 content is a direct countermeasure to it.
+
+**Examples of the type:**
+
+- Regression or catatonia risk in adolescence in some syndromes (e.g. Phelan-McDermid) —
+  families who know this is a recognised feature seek help months earlier
+- Psychiatric conditions with elevated incidence in 22q11.2 deletion syndrome
+- Seizure onset in genes where epilepsy is common but not universal
+- SUDEP counselling where the associated epilepsy syndrome warrants it
+- Feeding, GI, and sleep issues that are commonly under-investigated in autistic people
+
+**Required framing elements — all four:**
+
+1. It is **more common** in this group, not inevitable
+2. What it **looks like** in practical terms (so the family can recognise it)
+3. That it is **treatable / manageable** when identified
+4. **Who to raise it with**
+
+**Never attach a bare percentage** unless you retrieved it from a source in this session
+and can cite it with a date. A remembered risk figure is the single most damaging thing
+this tool could output — it will be believed, repeated, and acted on.
+
+**The framing that works:**
+
+> "[Condition] occurs more often in people with this genetic finding than in the general
+> population. It is not inevitable, and it is treatable when identified early. What it
+> can look like: [practical description]. It is worth mentioning to [clinician type] so
+> they know to keep an eye out."
+
+---
+
+## Tier 3 — Speculative and polygenic risk: excluded
+
+**Do not generate.** Not as a caveat, not as a "some studies suggest," not on request.
+
+This covers:
+
+- Polygenic risk scores for any condition. These are population-level instruments with
+  discrimination far below clinical usefulness at the individual level. Presenting one to
+  a family is misleading regardless of how it is hedged.
+- Risk inferred from a VUS. A VUS carries no risk information by definition.
+- Risk inferred by analogy — "this gene is in the same pathway as X, so Y might follow."
+- Any percentage you cannot source in this session.
+- Predictions about developmental trajectory, independence, speech, or capability.
+
+**If asked directly for a risk score or prediction,** decline in one sentence and offer
+what you can: the established surveillance picture (Tier 1) and the documented
+associations (Tier 2). Do not lecture about why. Something like:
+
+> "I can't give a meaningful individual risk number — the tools that produce those aren't
+> accurate enough at the individual level to act on. What I can give you is what's
+> established for this gene: [Tier 1 and 2 content]."
+
+---
+
+## Secondary and incidental findings
+
+Exome and genome sequencing can surface findings unrelated to the reason for testing —
+most often in cancer-predisposition or cardiac genes. ACMG SF v3.3 (*Genetics in
+Medicine*, 2025) defines the current reportable gene list.
+
+**If the report contains a secondary finding:**
+
+1. **Flag it clearly** — do not bury it and do not omit it.
+2. **Do not counsel on it.** These findings have implications for the whole family, carry
+   significant psychological weight, and require a genetic counsellor. State what it is
+   and route it.
+3. **Note the family implication** — that relatives may want to consider testing — as a
+   reason to see genetics, not as advice to act on now.
+4. **Do not describe the associated condition in detail.** That conversation belongs with
+   a counsellor who can respond to the person in front of them.
+
+**If the report is silent on secondary findings**, do not go looking. Whether they were
+sought and reported is a consent question that was settled before testing, and it is not
+yours to revisit.
+
+---
+
+## Children: additional constraints
+
+When the individual is a minor, the standard is different, and the difference matters.
+
+**The principle:** predictive information about adult-onset conditions is generally not
+disclosed in childhood *unless there is action to take during childhood.*
+
+**Apply it like this:**
+
+- **Childhood-actionable → include.** PTEN and TSC surveillance both begin in childhood.
+  Withholding these would cause harm. Include them.
+- **Adult-onset with no childhood action → do not elaborate.** Note that there are
+  implications to discuss with genetics at the appropriate time, and leave it there.
+  Do not describe the adult-onset condition to the parent of a young child.
+- **Carrier status affecting future reproductive choices → route to genetics.** State
+  that it exists and belongs in a genetic counselling conversation.
+
+When uncertain which side of the line something falls on, route it to genetics rather
+than resolving it yourself.
+
+---
+
+## Summary card
+
+| | Tier 1 | Tier 2 | Tier 3 |
+|---|---|---|---|
+| **Test** | Published protocol with defined action | Documented elevated risk, no protocol | Neither |
+| **Action** | Include prominently | Include, framed as awareness | Exclude entirely |
+| **Specifics** | Retrieve and cite, never recall | Retrieve and cite, never recall | N/A |
+| **Percentages** | Only if retrieved this session | Only if retrieved this session | Never |
+| **Framing** | "Standard care, not prediction" | "More common, not inevitable, treatable" | — |
+
+---
+
+## Sources
+
+- [ACMG SF v3.3 list for reporting of secondary findings in clinical exome and genome sequencing. *Genetics in Medicine*, 2025](https://www.gimjournal.org/article/S1098-3600(25)00101-7/fulltext)
+- [Update on Pediatric Surveillance Recommendations for PTEN Hamartoma Tumor Syndrome, DICER1-Related Tumor Predisposition, and Tuberous Sclerosis Complex. *Clinical Cancer Research*, 2025;31(2):234](https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations)
+- [Cancer and Overgrowth Manifestations of PTEN Hamartoma Tumor Syndrome: International PHTS Consensus Guidelines Working Group. *Clinical Cancer Research*, 2025;31(9):1754](https://aacrjournals.org/clincancerres/article/31/9/1754/761247/Cancer-and-Overgrowth-Manifestations-of-PTEN)
+- [Health Supervision for Children With 22q11.2 Deletion Syndrome: Clinical Report. *Pediatrics*, 2025;156(2)](https://publications.aap.org/pediatrics/article/156/2/e2025072717/202658/Health-Supervision-for-Children-With-22q11-2)
+- [Updated clinical practice recommendations for managing adults with 22q11.2 deletion syndrome. *Genetics in Medicine*, 2023](https://www.gimjournal.org/article/S1098-3600(22)01028-0/fulltext)
+- [Expanded clinical phenotype spectrum correlates with variant function in SCN2A-related disorders. *Brain*, 2024;147(8):2761](https://academic.oup.com/brain/article/147/8/2761/7656659)

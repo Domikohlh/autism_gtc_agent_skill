@@ -1,0 +1,64 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright 2026 Dominic Ho
+
+
+SCOPE
+-----
+
+The documentation and curated content in this repository are licensed under the
+Creative Commons Attribution 4.0 International License. Specifically:
+
+    SKILL.md
+    README.md
+    references/          (gene_index.md, risk_layer_policy.md,
+                          vus_communication.md, report_parsing.md,
+                          output_templates.md)
+    assets/gene_index.json
+    docs/                (workflow diagrams and their Mermaid sources)
+
+Source code in scripts/ is licensed separately under the Apache License,
+Version 2.0. See LICENSE.
+
+
+LICENSE
+-------
+
+Full legal code:          https://creativecommons.org/licenses/by/4.0/legalcode
+Human-readable summary:   https://creativecommons.org/licenses/by/4.0/
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided you give appropriate credit, provide a link to the
+license, and indicate if changes were made.
+
+
+DATABASE RIGHTS
+---------------
+
+Section 4 of the CC BY 4.0 legal code expressly extends the license to sui
+generis database rights where they apply. This matters for the curated gene
+index in assets/gene_index.json: in the United Kingdom, the European Union, and
+other jurisdictions that recognise database rights separately from copyright,
+a permissive software licence alone would not clearly grant reuse of the
+collection itself. CC BY 4.0 closes that gap.
+
+The gene index is intended to be reused, corrected, and extended. If you build
+on it, attribution plus a note of what you changed is all that is asked.
+
+
+IF YOU MODIFY THE CLINICAL CONTENT
+----------------------------------
+
+Indicating changes is a licence condition, and here it is also a safety matter.
+The reference files encode guardrails — the three-tier risk policy, the
+secondary-findings routing, the rule against reciting surveillance specifics
+from memory. If you alter any of these, say so prominently, so that downstream
+users know they are not running the reviewed version.
+
+
+NOT A MEDICAL DEVICE
+--------------------
+
+Neither this licence nor the Apache License 2.0 grants any warranty of fitness
+for medical use, and neither is a substitute for clinical or regulatory review.
+See the disclaimer in README.md and NOTICE.

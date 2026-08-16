@@ -1,0 +1,66 @@
+Gene-to-Care Navigator (or "Autism_GTC_Skill")
+Copyright 2026 Dominic Ho
+
+This product includes software licensed under the Apache License, Version 2.0
+(see LICENSE), and documentation and curated content licensed under the
+Creative Commons Attribution 4.0 International License (see LICENSE-DOCS).
+
+
+================================================================================
+MEDICAL DISCLAIMER
+================================================================================
+
+This software is NOT a medical device. It does not provide medical advice,
+diagnosis, prognosis, or treatment recommendations, and it must not be used as
+a substitute for evaluation by a qualified clinician.
+
+It summarises published information and routes users to authoritative sources
+so that clinicians and families can have better-informed conversations. Every
+clinical decision belongs to the individual's clinical team.
+
+The warranty disclaimers and limitations of liability in the Apache License 2.0
+and CC BY 4.0 concern the software and content as such. They are not, and
+should not be relied upon as, protection against harms arising from clinical
+use. Anyone deploying this in or near a clinical setting should obtain
+independent legal and regulatory advice.
+
+
+================================================================================
+GUARDRAILS
+================================================================================
+
+The reference files in references/ are not documentation about the software —
+they are the software's safety-relevant behaviour, expressed in prose because
+the agent reads them at runtime. In particular:
+
+  references/risk_layer_policy.md    three-tier risk policy; ACMG SF v3.3
+                                     secondary-findings routing; paediatric rule
+  references/vus_communication.md    handling of variants of uncertain
+                                     significance
+
+Anyone distributing a modified version is required by Apache License 2.0
+Section 4(b) to carry prominent notices stating that files were changed. Where
+the changed files are the ones listed above, please make that especially clear.
+
+
+================================================================================
+THIRD-PARTY CONTENT
+================================================================================
+
+This repository contains no text reproduced from clinical practice guidelines,
+GeneReviews, or other copyrighted clinical sources.
+
+The curated gene index records factual identifiers only — gene symbols,
+syndrome names, care-domain labels, source citations, and URLs. It deliberately
+excludes screening ages, screening intervals, imaging modalities, and drug
+doses. Those must be retrieved from the cited source at point of use and
+stamped with a retrieval date.
+
+That exclusion exists for clinical safety: guideline specifics drift between
+versions, and a stale number is worse than no number because users act on it.
+It has the secondary effect of keeping this repository clear of third-party
+copyright. Please preserve it. Do not paste surveillance tables, screening
+schedules, or guideline excerpts into the index or the reference files.
+
+All referenced guidelines, databases, and publications remain the property of
+their respective publishers and are cited, not reproduced.
