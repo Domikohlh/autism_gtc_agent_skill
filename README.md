@@ -110,8 +110,9 @@ gene-to-care-navigator/
 │   ├── parse_report.py         # report → findings JSON, identifiers redacted
 │   ├── gene_lookup.py          # gene / syndrome / cytoband → sources, domains, traps
 │   └── render_brief.py         # findings → two-register brief
-├── tests/                      # smoke_test.py · cases.md · prompts.md ·
+├── tests/                      # smoke_test.py · cases.md (rubric) · prompts.md
 │   └── fixtures/               #   28 synthetic reports and VCFs — no real data
+├── testing-gap-checker/        # v2 skill: obtaining testing, not interpreting results
 └── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
@@ -316,11 +317,10 @@ output, and refuses to pass unless each fixture carries a synthetic marker. The 
 spans the layouts, the clinical scenarios, the VCF variants, and the cases that must
 produce **nothing**; [`tests/cases.md`](tests/cases.md) lists what each one tests.
 
-**Skill layer** — [`tests/cases.md`](tests/cases.md) carries the per-fixture rubric,
-scored by hand because the failures that matter are judgement failures. Alongside it:
-[`prompts.md`](tests/prompts.md) (ready-to-paste),
-[`adversarial_prompts.md`](tests/adversarial_prompts.md) (guardrail pressure tests), and
-[`no_trigger_prompts.md`](tests/no_trigger_prompts.md) (must-not-fire cases).
+**Skill layer** — [`tests/cases.md`](tests/cases.md) carries the rubric, scored by hand
+because the failures that matter are judgement failures.
+[`tests/prompts.md`](tests/prompts.md) carries what to paste: probing prompts, guardrail
+pressure tests, multi-turn erosion sequences, and the must-not-fire set.
 
 **No real patient report has been through this repository, and doing so is not a casual
 step** — see [Data privacy](#data-privacy-and-confidentiality) first.

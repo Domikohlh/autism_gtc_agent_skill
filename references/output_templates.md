@@ -55,13 +55,48 @@ this to them.
 
 **Tone notes for Template A**
 
-- Short sentences. No jargon without immediate explanation.
 - Identity-first language ("autistic person") unless the user's own usage differs.
 - Never speculate about capability, independence, or trajectory.
 - Do not use the word "risk" more than necessary; "worth monitoring" carries the same
   information with less alarm.
 - If there is genuinely good news — a manageable finding, an active research community,
   an available treatment — say so plainly. Families get very little of that.
+
+### Register discipline — read this before writing the family half
+
+Testing showed the family register drifting long, technical and tutorial: definitions the
+reader did not ask for, citations mid-sentence, and a teaching voice. All three make it
+harder to use, and the family half is the one most people will actually read.
+
+**The fix for a technical term is deletion, not definition.** A tutor explains
+"haploinsufficiency"; a useful brief never uses the word. Define a term only when the
+family will have to say it themselves — the gene symbol and the syndrome name, because
+those are what they need to find their community, book the right clinic, and search. Every
+other term should be replaced by what it means in practice, not followed by a gloss.
+
+- ✗ "This is a de novo loss-of-function variant, meaning it arose spontaneously rather
+  than being inherited, and results in haploinsufficiency of the gene product."
+- ✓ "This change was not inherited from either parent — it happened for the first time in
+  your daughter."
+
+**No citations in the family half.** No journal names, no author-year, no URLs mid-sentence.
+The evidence belongs in the clinician section, which is where anyone checking it will look.
+Where a family needs to know a protocol exists, name the body that publishes it in plain
+words — "there is a published monitoring schedule, and your genetics team will have it" —
+and nothing more.
+
+**Be directive.** Say who does what next. "Ask your GP to refer you to clinical genetics"
+is usable; "it may be worth considering whether a referral would be appropriate" is not.
+Where the reader has a decision to make, say what the options are and who decides.
+
+**Length.** Aim for one screen per section and under 800 words for the whole family half.
+If a section needs more, it is usually carrying clinician content that belongs in the other
+register. Cut rather than compress — a shorter brief that gets read beats a complete one
+that does not.
+
+**Order by what they do next**, not by what is scientifically interesting. Anything
+time-critical goes first. What was found comes before what it means. What to do comes
+before why.
 
 ---
 

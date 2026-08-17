@@ -159,6 +159,16 @@ For non-diagnostic reports generally, also consider whether the testing performe
 what current guidance recommends — a 2019 microarray is not an exome, and the family may
 never have been offered the latter.
 
+**A negative or non-diagnostic report belongs here, in full.** Explain what it does and
+does not establish, what the assay could not have found, and what the reasonable next
+steps are. That is delivery of published guidance, which is what this skill does.
+
+Hand over to the Testing Gap Checker (`testing-gap-checker/SKILL.md`) only at the point
+where the question becomes **how to actually obtain the next test** — wording a referral
+or funding request, or responding to a refusal. That needs the indication index and
+current eligibility criteria, which this skill does not carry. The boundary is obtaining,
+not interpreting.
+
 ### Step 6 — Write both registers
 
 Produce **two versions** of the output, using the templates in
@@ -182,6 +192,13 @@ time and does not want to be condescended to. Neither of them wants padding.
 
 Some specifics that matter:
 
+- **The family register is plain and directive, not tutorial.** The fix for a technical
+  term is deletion, not definition — a tutor explains "haploinsufficiency", a useful brief
+  never uses the word. Define only what the family must say themselves: the gene symbol
+  and the syndrome name. Keep citations, journal names and URLs out of the family half
+  entirely; they belong in the clinician section. Say who does what next, in the
+  imperative. Aim under 800 words. See the register discipline section of
+  `references/output_templates.md`.
 - **Identity-first language by default** ("autistic person") — this is the preference of
   most of the autistic community. Follow the user's own usage if they differ.
 - **Do not frame autism as a disease to be prevented or cured.** The care implications
