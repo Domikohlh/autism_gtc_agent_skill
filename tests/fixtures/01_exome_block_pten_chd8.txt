@@ -1,0 +1,45 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Meridian Clinical Genomics Laboratory
+CLINICAL EXOME SEQUENCING REPORT
+
+Patient: Specimen, Testcase A          DOB: 04/09/2017
+MRN: 7781204                           Accession: MCG-2026-004411
+Referring clinician: Dr R. Fictional, Community Paediatrics
+Date of collection: 21 February 2026
+Date of report: 12 March 2026
+
+Reason for referral: Global developmental delay, autism spectrum diagnosis at age 4,
+macrocephaly (head circumference >99th centile).
+
+Test performed: Whole exome sequencing, proband and both parents (trio).
+
+RESULTS
+
+FINDING 1
+Gene: PTEN
+Transcript: NM_000314.8
+Variant: c.697C>T (p.Arg233Ter)
+Zygosity: heterozygous
+Inheritance: de novo
+Classification: Pathogenic
+
+This nonsense variant is predicted to result in loss of function. Loss-of-function
+variants in PTEN are a well-established mechanism of disease.
+
+FINDING 2
+Gene: CHD8
+Transcript: NM_001170629.2
+Variant: c.4837A>G (p.Ile1613Val)
+Zygosity: heterozygous
+Inheritance: maternally inherited
+Classification: Variant of uncertain significance
+
+The clinical significance of this variant cannot be determined at this time.
+
+Secondary findings: analysis was performed and no reportable secondary findings were
+identified.
+
+Methods: Exome capture and sequencing on a short-read platform. Mean coverage 112x.
+Regions with coverage below 20x are available on request. This assay does not reliably
+detect repeat expansions, deep intronic variants, or balanced rearrangements.

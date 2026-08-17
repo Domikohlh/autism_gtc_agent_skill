@@ -1,0 +1,26 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Eastgate Molecular Genetics
+TARGETED GENE SEQUENCING — REPORT
+
+Patient: Specimen, Testcase N          DOB: 31/03/2022
+MRN: 6041229
+Date of collection: 12 May 2026
+Date of report: 03 June 2026
+
+Indication: Developmental regression at 18 months with loss of acquired hand skills and
+spoken language, hand stereotypies, deceleration of head growth.
+
+Test performed: MECP2 sequencing and deletion/duplication analysis.
+
+RESULT
+
+Gene: MECP2
+Transcript: NM_004992.4
+Variant: c.916C>T (p.Arg306Cys)
+Zygosity: heterozygous
+Inheritance: de novo
+Classification: Pathogenic
+
+Interpretation: this is a recurrent pathogenic variant reported in individuals with Rett
+syndrome. The result is consistent with the clinical presentation described on referral.

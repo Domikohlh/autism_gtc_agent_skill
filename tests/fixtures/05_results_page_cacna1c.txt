@@ -1,0 +1,11 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+RESULT
+
+Gene: CACNA1C
+Transcript: NM_000719.7
+Variant: c.1216G>A (p.Gly406Arg)
+Zygosity: heterozygous
+Classification: Pathogenic
+
+Correlation with clinical findings is advised.

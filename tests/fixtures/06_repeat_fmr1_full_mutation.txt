@@ -1,0 +1,29 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Eastgate Molecular Genetics
+FRAGILE X (FMR1) REPEAT ANALYSIS — REPORT
+
+Patient: Specimen, Testcase E          DOB: 08/07/2019
+MRN: 6620144
+Date of collection: 11 May 2026
+Date of report: 28 May 2026
+
+Indication: Global developmental delay, autism spectrum diagnosis, family history of
+intellectual disability in a maternal uncle.
+
+Test performed: FMR1 CGG repeat analysis by triplet-repeat primed PCR with Southern blot
+confirmation, including methylation analysis.
+
+RESULT
+
+FMR1 CGG repeat sizing: approximately 340 repeats detected.
+Methylation status: fully methylated.
+
+Interpretation: full mutation.
+
+This result is consistent with a molecular diagnosis of Fragile X syndrome.
+
+Genetic counselling is recommended for the family. Carrier testing has implications for
+maternal relatives.
+
+Note: this assay tests FMR1 repeat sizing only. It does not assess other genes.

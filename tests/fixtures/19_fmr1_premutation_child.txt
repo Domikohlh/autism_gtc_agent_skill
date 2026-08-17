@@ -1,0 +1,24 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Eastgate Molecular Genetics
+FRAGILE X (FMR1) REPEAT ANALYSIS — REPORT
+
+Patient: Specimen, Testcase Q          DOB: 21/09/2021
+MRN: 7712008
+Date of collection: 03 April 2026
+Date of report: 22 April 2026
+
+Indication: Speech delay, family history of intellectual disability.
+
+Test performed: FMR1 CGG repeat analysis by triplet-repeat primed PCR.
+
+RESULT
+
+FMR1 CGG repeat sizing: alleles 30 and 78 repeats.
+Methylation status: unmethylated.
+
+Interpretation: premutation range.
+
+This result does not indicate Fragile X syndrome. Premutation carriers are at risk of
+distinct adult-onset conditions, and there are implications for other family members.
+Referral to clinical genetics for genetic counselling is recommended.

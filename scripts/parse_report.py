@@ -20,6 +20,9 @@ Usage:
     python parse_report.py annotated.vcf
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import re
@@ -101,6 +104,19 @@ CNV_PROSE_KIND_FIRST = re.compile(
     re.IGNORECASE,
 )
 
+# Reports routinely name the *other* syndrome to contrast it — "the reciprocal
+# 16p11.2 deletion and this duplication have partly differing features". Read
+# literally that is a second finding, and for 16p11.2 it is a finding with the
+# opposite phenotype to the real one. Matched against the text just before the
+# statement.
+CNV_REFERENTIAL = re.compile(
+    r"(?:reciprocal|in\s+contrast(?:\s+to)?|as\s+opposed\s+to|unlike|whereas|instead\s+of"
+    r"|rather\s+than|no\s+evidence\s+of|absence\s+of|does\s+not\s+(?:detect|exclude)"
+    r"|distinguish(?:ed)?\s+from|compared\s+(?:to|with))"
+    r"(?:\s+(?:the|a|an|this|that|its))?\s*$",
+    re.IGNORECASE,
+)
+
 # Repeat expansions. FMR1 is the canonical case: repeat sizing is a separate
 # assay, it is the single most-missed result in an autism/ID workup, and the
 # HGVS patterns above cannot see it at all.
@@ -126,12 +142,17 @@ REPEAT_CATEGORIES = [
     ("normal range", "normal"),
 ]
 
-METHYLATION = [
+# Two-stage: a specific status if one is stated, and only otherwise the generic
+# note. As one list, "Methylation status: fully methylated" matches the generic
+# "methylation" first — earlier in the string — and loses the actual answer.
+METHYLATION_SPECIFIC = [
     ("fully methylated", "fully methylated"),
     ("partially methylated", "partially methylated"),
+    ("abnormally methylated", "abnormally methylated"),
     ("unmethylated", "unmethylated"),
-    ("methylation", "methylation assessed — read the source"),
+    ("not methylated", "unmethylated"),
 ]
+METHYLATION_GENERIC = re.compile(r"methylat", re.IGNORECASE)
 
 CLASSIFICATIONS = [
     ("likely pathogenic", "Likely pathogenic"),
@@ -176,7 +197,7 @@ TEST_TYPES = [
 
 DATE_SRC = (
     r"\d{4}-\d{2}-\d{2}"
-    r"|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"
+    r"|\d{1,2}[./-]\d{1,2}[./-]\d{2,4}"  # the dotted form is standard across Europe
     r"|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}"
     r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}"
 )
@@ -188,7 +209,12 @@ DATE = re.compile(rf"\b(?:{DATE_SRC})\b", re.IGNORECASE)
 REPORT_DATE_LABEL = re.compile(
     r"(?:date\s+of\s+report|report(?:ing)?\s+date|date\s+report(?:ed)?|reported(?:\s+on)?"
     r"|date\s+of\s+issue|date\s+issued|issued(?:\s+on)?|signed[\s-]?out(?:\s+on)?"
-    r"|authoris(?:ed|zed)(?:\s+on)?|results?\s+date|date\s+of\s+results?)"
+    r"|authoris(?:ed|zed)(?:\s+on)?|results?\s+date|date\s+of\s+results?"
+    # Enough non-English labels to keep a foreign report from falling back to a
+    # date of birth. Fields elsewhere will still be missed — that is flagged,
+    # not silently guessed.
+    r"|befunddatum|berichtsdatum|datum\s+des\s+befund(?:e|es)?"
+    r"|fecha\s+del?\s+informe|date\s+du\s+rapport|data\s+del\s+referto)"
     r"\s*[:：]?\s*$",
     re.IGNORECASE,
 )
@@ -197,7 +223,9 @@ NON_REPORT_DATE_LABEL = re.compile(
     r"|date\s+of\s+collection|collect(?:ed|ion)(?:\s+date)?|date\s+collected"
     r"|receiv(?:ed|al)(?:\s+date)?|date\s+received|drawn(?:\s+on)?|date\s+drawn"
     r"|accession(?:\s+date)?|specimen\s+date|sample\s+date"
-    r"|referral\s+date|date\s+of\s+referral|requested(?:\s+on)?|date\s+requested)"
+    r"|referral\s+date|date\s+of\s+referral|requested(?:\s+on)?|date\s+requested"
+    r"|geburtsdatum|geb\.|eingangsdatum|entnahmedatum|abnahmedatum"
+    r"|fecha\s+de\s+nacimiento|date\s+de\s+naissance|data\s+di\s+nascita)"
     r"\s*[:：]?\s*$",
     re.IGNORECASE,
 )
@@ -219,6 +247,10 @@ GENE_STOPLIST = {
     "HGVS", "LOH", "AOH", "UPD", "FDA", "NHS", "EDTA", "GT", "AF", "DP",
     "CHROM", "POS", "QUAL", "FILTER", "INFO", "FORMAT", "PASS", "VCF", "ANN",
     "CSQ", "CLNSIG", "MODERATE", "HIGH", "LOW",
+    # Words left behind by redaction, which would otherwise look like symbols
+    # to the last-resort gene guesser.
+    "NAME", "REDACTED", "DOB", "MRN", "RECORD", "NUMBER", "ACCESSION", "EMAIL",
+    "SSN", "SHAPED",
 }
 
 # --------------------------------------------------------------------------
@@ -234,27 +266,67 @@ GENE_STOPLIST = {
 # placeholder and cannot be mistaken for another word of the name. Nothing here
 # consumes to end of line: contexts are whitespace-joined before redaction, so a
 # greedy rule would eat the variant along with the identifier.
+# One to four capitalised words on a single line, none of which is itself a
+# field label. See the comment on the name rules below for why both constraints
+# matter.
+_NAME_TOKENS = r"(?:(?![\w'’\-]+[ \t]*[:：])[A-Z][\w'’\-]*,?[ \t]*){1,4}"
+
 PHI_REDACTIONS = [
-    (re.compile(rf"\b(?:d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date)\s*[:：]?\s*(?:{DATE_SRC})",
+    (re.compile(r"\b(?:d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date|geburtsdatum"
+                rf"|fecha\s+de\s+nacimiento|date\s+de\s+naissance)\s*[:：]?\s*(?:{DATE_SRC})",
                 re.IGNORECASE), "[DOB REDACTED]"),
-    (re.compile(r"\b(?:MRN|medical\s+record\s*(?:no\.?|number|#)?)\s*[:：#]?\s*[\w-]+", re.IGNORECASE),
-     "[MRN REDACTED]"),
+    # Labs name this field a dozen ways; matching only "MRN" leaks the rest.
+    (re.compile(r"\b(?:MRN|(?:medical\s+record|hospital|record|chart|case|lab(?:oratory)?"
+                r"|patient|episode|referral)\s*(?:no\.?|number|id|#)"
+                r"|patient\s*id"
+                r"|fallnummer|patientennummer|aktenzeichen"
+                r"|n(?:ú|u)mero\s+de\s+historia|num(?:é|e)ro\s+de\s+dossier)"
+                # Require a digit in the value. Without it, "Referral number: see
+                # below" redacts the word "see", and worse, prose values get eaten.
+                r"\s*[:：#]?[ \t]*(?=[\w-]*\d)[\w-]+", re.IGNORECASE),
+     "[RECORD NUMBER REDACTED]"),
     (re.compile(r"\bNHS\s*(?:no\.?|number)?\s*[:：]?\s*\d[\d ]{8,12}", re.IGNORECASE),
      "[NHS NUMBER REDACTED]"),
     (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[SSN-SHAPED REDACTED]"),
-    (re.compile(r"\b(?:accession|specimen|sample)\s*(?:no\.?|number|id|#)?\s*[:：#]\s*[A-Z0-9][A-Z0-9\-]{3,}",
+    # The value must contain a digit, or this eats the specimen TYPE — and
+    # "Specimen: peripheral blood" vs "fibroblast" vs "saliva" is clinically
+    # load-bearing: it governs how a mosaic result is interpreted and whether
+    # RNA testing on that tissue would be informative. Redacting an accession
+    # number is required; redacting the tissue destroys evidence.
+    (re.compile(r"\b(?:accession|specimen|sample)\s*(?:no\.?|number|id|#)?\s*[:：#][ \t]*"
+                r"(?=[A-Z0-9\-]*\d)[A-Z0-9][A-Z0-9\-]{3,}",
                 re.IGNORECASE), "[ACCESSION REDACTED]"),
-    (re.compile(r"\b[\w.\-]+@[\w\-]+\.[A-Za-z]{2,}\b"), "[EMAIL REDACTED]"),
+    # Multi-label domains need the repeated group, or lab@genomics.nhs.uk
+    # redacts to "[EMAIL REDACTED].uk".
+    (re.compile(r"\b[\w.\-]+@[\w\-]+(?:\.[\w\-]+)*\.[A-Za-z]{2,}\b"), "[EMAIL REDACTED]"),
     # "Gene name:" is a real field on many reports, so only `patient` triggers
     # the name rule mid-line; a bare "Name:" is only honoured at line start.
-    (re.compile(r"\b(?:patient(?:'s)?(?:\s+name)?|pt\.?\s+name)\s*[:：]\s*"
-                r"(?:[A-Z][\w'’\-]*,?\s*){1,4}", re.IGNORECASE), "[NAME REDACTED] "),
-    (re.compile(r"(?:^|\n)[ \t]*name\s*[:：]\s*(?:[A-Z][\w'’\-]*,?\s*){1,4}", re.IGNORECASE),
+    #
+    # _NAME_TOKENS is deliberately newline-free and label-aware. With `\s*`
+    # between tokens the match runs past the end of the line and swallows the
+    # NEXT field's label — "Patient Name: Jane Doe\nGene: PTEN" became
+    # "[NAME REDACTED] : PTEN", which strips the authoritative `Gene:` label and
+    # forces the parser onto its guess-from-prose fallback. `[ \t]*` keeps the
+    # match on one line; the lookahead stops it before any token that is itself
+    # a field label, which is what protects column layouts where two fields
+    # share a line.
+    (re.compile(r"\b(?:patient(?:'s)?(?:\s+name)?|pt\.?\s+name)\s*[:：][ \t]*"
+                + _NAME_TOKENS, re.IGNORECASE), "[NAME REDACTED] "),
+    (re.compile(r"(?:^|\n)[ \t]*name\s*[:：][ \t]*" + _NAME_TOKENS, re.IGNORECASE),
      "\n[NAME REDACTED] "),
 ]
 
 
 def redact(text: str) -> str:
+    """
+    Strip labelled identifiers from a document.
+
+    Applied to the WHOLE document at the input boundary, before any parsing, so
+    that no context window can ever be cut in a way that separates an identifier
+    from the label that identifies it. Redacting the extracted windows instead
+    leaks the value whenever the window happens to slice through its label —
+    which is exactly what a short report does.
+    """
     for pattern, replacement in PHI_REDACTIONS:
         text = pattern.sub(replacement, text)
     return text
@@ -329,26 +401,64 @@ def read_text(path: Path) -> str:
     return path.read_text(errors="replace")
 
 
+SCANNED_PDF_HINT = (
+    "No text could be extracted. If this is a scanned or photographed report, "
+    "it needs OCR first (e.g. `ocrmypdf in.pdf out.pdf`). Afterwards, verify the "
+    "variant string character by character against the original — a misread "
+    "c.1234G>A vs c.1234C>A is a different variant."
+)
+
+
 def read_pdf(path: Path) -> str:
+    """
+    Extract text from a PDF, trying pdfplumber then pdftotext.
+
+    Both routes are attempted before giving up, and failures report what to do
+    next rather than surfacing a traceback. Reports reach this tool as scans and
+    phone photographs often enough that the unreadable-PDF path is a normal
+    case, not an exceptional one.
+    """
+    attempts: list[str] = []
+
     try:
         import pdfplumber  # type: ignore
 
         with pdfplumber.open(str(path)) as pdf:
-            return "\n".join((page.extract_text() or "") for page in pdf.pages)
+            text = "\n".join((page.extract_text() or "") for page in pdf.pages)
+        if text.strip():
+            return text
+        attempts.append("pdfplumber opened the file but found no text layer")
     except ImportError:
-        pass
+        attempts.append("pdfplumber not installed")
+    except Exception as exc:  # malformed, encrypted, or otherwise unreadable
+        attempts.append(f"pdfplumber failed: {type(exc).__name__}: {exc}")
 
     try:
         out = subprocess.run(
             ["pdftotext", "-layout", str(path), "-"],
             capture_output=True, text=True, check=True,
         )
-        return out.stdout
-    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
-        raise RuntimeError(
-            "Could not read PDF. Install pdfplumber (`pip install pdfplumber "
-            "--break-system-packages`) or poppler-utils for pdftotext."
-        ) from exc
+        if out.stdout.strip():
+            return out.stdout
+        attempts.append("pdftotext ran but found no text layer")
+    except FileNotFoundError:
+        attempts.append("pdftotext not available (install poppler-utils)")
+    except subprocess.CalledProcessError as exc:
+        attempts.append(f"pdftotext failed: {exc.stderr.strip() or exc}")
+
+    detail = "\n".join(f"  - {a}" for a in attempts)
+
+    if any("no text layer" in a for a in attempts):
+        hint = SCANNED_PDF_HINT
+    elif all("not installed" in a or "not available" in a for a in attempts):
+        hint = ("No PDF reader available. Install one of: `pip install pdfplumber` "
+                "or poppler-utils for pdftotext.")
+    else:
+        hint = ("A PDF reader was available but could not open this file — it may be "
+                "corrupt, truncated, or password-protected. Try opening it manually, "
+                "re-exporting it, or ask for the report as text.")
+
+    raise RuntimeError(f"Could not read {path.name}.\n{detail}\n\n{hint}")
 
 
 # --------------------------------------------------------------------------
@@ -598,6 +708,8 @@ def parse_prose_cnvs(text: str, iscn_bands: list[str]) -> list[CopyNumberVariant
 
     for pattern in (CNV_PROSE_SIZE_FIRST, CNV_PROSE_BAND_FIRST, CNV_PROSE_KIND_FIRST):
         for m in pattern.finditer(text):
+            if CNV_REFERENTIAL.search(text[max(0, m.start() - 40):m.start()]):
+                continue  # describing another region, not reporting this one
             band = m.group("band")
             kind = m.group("kind").lower()
             kind = "deletion" if kind in ("deletion", "microdeletion", "loss") else "duplication"
@@ -687,7 +799,10 @@ def parse_repeats(text: str) -> list[RepeatExpansion]:
             motif=motif,
             allele_sizes=sizes,
             category=find_first(ctx, REPEAT_CATEGORIES),
-            methylation=find_first(ctx, METHYLATION),
+            methylation=(
+                find_first(ctx, METHYLATION_SPECIFIC)
+                or ("methylation assessed — read the source" if METHYLATION_GENERIC.search(ctx) else None)
+            ),
             raw_context=ctx,
             needs_review=[
                 "repeat size thresholds are gene- and assay-specific — do not interpret "
@@ -912,21 +1027,20 @@ def finalise_warnings(rec: ReportRecord) -> ReportRecord:
     return rec
 
 
-def redact_record(rec: ReportRecord) -> ReportRecord:
-    for v in rec.variants:
-        v.raw_context = redact(v.raw_context)
-    for c in rec.cnvs:
-        c.raw_context = redact(c.raw_context)
-    for r in rec.repeats:
-        r.raw_context = redact(r.raw_context)
-    return rec
+def parse_text(text: str, source: str | None = None, do_redact: bool = True) -> ReportRecord:
+    """Redact first, then parse — see `redact` for why the order matters."""
+    if do_redact:
+        text = redact(text)
+    if text.lstrip().startswith("##fileformat=VCF"):
+        return finalise_warnings(parse_vcf(text, source=source))
+    return parse(text, source=source)
 
 
-def parse_path(path: Path) -> ReportRecord:
+def parse_path(path: Path, do_redact: bool = True) -> ReportRecord:
     text = read_text(path)
-    if path.suffix.lower() == ".vcf" or text.lstrip().startswith("##fileformat=VCF"):
-        return finalise_warnings(parse_vcf(text, source=str(path)))
-    return parse(text, source=str(path))
+    if path.suffix.lower() == ".vcf" and not text.lstrip().startswith("##fileformat=VCF"):
+        text = "##fileformat=VCFv4.2\n" + text  # tolerate a headerless .vcf
+    return parse_text(text, source=str(path), do_redact=do_redact)
 
 
 def main() -> int:
@@ -940,20 +1054,19 @@ def main() -> int:
     )
     args = ap.parse_args()
 
+    do_redact = not args.no_redact
+
     if args.text:
-        record = parse(args.text, source=None)
+        record = parse_text(args.text, source=None, do_redact=do_redact)
     elif args.path:
         path = Path(args.path)
         if not path.exists():
             print(f"error: {path} not found", file=sys.stderr)
             return 1
-        record = parse_path(path)
+        record = parse_path(path, do_redact=do_redact)
     else:
         ap.error("provide a file path or --text")
         return 2
-
-    if not args.no_redact:
-        record = redact_record(record)
 
     payload = json.dumps(asdict(record), indent=2)
     if args.json:

@@ -1,0 +1,30 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Eastgate Molecular Genetics
+EPILEPSY GENE PANEL — REPORT
+
+Patient: Specimen, Testcase K          DOB: 09/10/2024
+MRN: 4408871
+Date of collection: 22 June 2026
+Date of report: 14 July 2026
+
+Indication: Prolonged febrile seizures from 6 months of age, subsequent afebrile
+seizures, developmental plateau.
+
+Test performed: Targeted epilepsy gene panel (186 genes), version 6.1.
+
+RESULT
+
+Gene: SCN1A
+Transcript: NM_001165963.4
+Variant: c.4933C>T (p.Arg1645Ter)
+Zygosity: heterozygous
+Inheritance: de novo
+Classification: Pathogenic
+
+Interpretation: this nonsense variant is expected to result in haploinsufficiency.
+Loss-of-function variants in SCN1A are associated with the Dravet syndrome end of the
+SCN1A-related spectrum.
+
+Urgent discussion with the treating neurology team is advised, as this result has
+implications for antiseizure medication selection.

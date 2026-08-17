@@ -1,0 +1,29 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Harborview Genomic Medicine
+CLINICAL EXOME SEQUENCING — REPORT
+
+Patient: Specimen, Testcase F          DOB: 12/03/2014
+MRN: 1120876
+Date of collection: 04 September 2019
+Date of report: 21 October 2019
+
+Reason for referral: Autism spectrum diagnosis, moderate intellectual disability,
+no dysmorphic features.
+
+Test performed: Whole exome sequencing, proband only (singleton).
+
+RESULT
+
+No pathogenic or likely pathogenic variants were identified in genes currently associated
+with the reported phenotype.
+
+This is a non-diagnostic result. It does not exclude a genetic cause.
+
+Limitations: singleton exome sequencing without parental samples limits interpretation of
+variants of uncertain significance. This assay does not detect repeat expansions,
+methylation abnormalities, deep intronic variants, or copy number changes below the
+resolution of the pipeline. Fragile X (FMR1) repeat testing was not performed as part of
+this assay.
+
+Reanalysis of the sequencing data may be requested through the referring clinician.

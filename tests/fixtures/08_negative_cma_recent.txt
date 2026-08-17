@@ -1,0 +1,24 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Riverside Cytogenetics Unit
+CHROMOSOMAL MICROARRAY ANALYSIS — REPORT
+
+Patient: Specimen, Testcase G          DOB: 19/08/2022
+MRN: 8830145
+Date of collection: 02 March 2026
+Date of report: 16 March 2026
+
+Clinical indication: Autism spectrum diagnosis, speech delay.
+
+Test performed: Chromosomal microarray (CMA), genome build GRCh38.
+
+RESULT
+
+No clinically significant copy number variation was detected.
+
+This is a normal result for this assay.
+
+Limitations: chromosomal microarray detects copy number changes only. It does not detect
+sequence-level variants, balanced rearrangements, repeat expansions, uniparental disomy
+without a copy number change, or low-level mosaicism. A normal microarray does not
+exclude a monogenic cause; further testing may be indicated on clinical grounds.

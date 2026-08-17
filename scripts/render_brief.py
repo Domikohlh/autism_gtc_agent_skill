@@ -40,6 +40,9 @@ Usage:
     python render_brief.py findings.json --family-only
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import re

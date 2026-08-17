@@ -1,0 +1,27 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+NORTHFIELD GENETIC DIAGNOSTICS
+Clinical Exome Sequencing — Summary of Findings
+
+Patient name: Specimen, Testcase B     Date of birth: 17/11/2019
+Hospital number: 5540982               Specimen ID: NGD-88213-A
+Date received: 03 January 2026
+Date of report: 09 February 2026
+Indication: Neonatal-onset seizures, developmental delay
+
+Test: Whole exome sequencing (trio)
+
+REPORTABLE VARIANTS
+
+Classification      Gene     Transcript          Variant                      Protein            Zygosity        Inheritance
+Pathogenic          SCN2A    NM_001040142.2      c.5645G>A                    p.(Arg1882Gln)     heterozygous    de novo
+
+INTERPRETATION
+
+The identified SCN2A variant has been reported previously in individuals with
+SCN2A-related disorders. Functional characterisation has not been performed for this
+individual. Correlation with the clinical phenotype and discussion with the referring
+neurology team is recommended.
+
+Secondary findings: not analysed. The family opted out of secondary findings analysis at
+the time of consent.

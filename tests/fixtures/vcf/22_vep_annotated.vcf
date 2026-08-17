@@ -1,0 +1,9 @@
+##fileformat=VCFv4.2
+##source=SyntheticTestFixture_NotRealPatientData
+##reference=GRCh38
+##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Feature|BIOTYPE|HGVSc|HGVSp">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	proband
+chr22	50236046	.	G	GC	690	PASS	CSQ=C|frameshift_variant|HIGH|SHANK3|ENSG00000251322|Transcript|NM_033517.1|protein_coding|NM_033517.1:c.3679dup|NP_277052.1:p.Ala1227GlyfsTer69	GT	0/1
+chr6	152121970	.	C	T	455	PASS	CSQ=T|missense_variant|MODERATE|SYNGAP1|ENSG00000197283|Transcript|NM_006772.3|protein_coding|NM_006772.3:c.1685C>T|NP_006763.2:p.Pro562Leu	GT	0/1
+chr12	2497925	.	G	A	788	PASS	CSQ=A|missense_variant|MODERATE|CACNA1C|ENSG00000151067|Transcript|NM_000719.7|protein_coding|NM_000719.7:c.1216G>A|NP_000710.5:p.Gly406Arg	GT	0/1

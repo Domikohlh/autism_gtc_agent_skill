@@ -1,0 +1,30 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Riverside Cytogenetics Unit
+CHROMOSOMAL MICROARRAY ANALYSIS — REPORT
+
+Patient: Specimen, Testcase C          DOB: 22/05/2021
+MRN: 3391077
+Date of collection: 14 April 2026
+Date of report: 02 May 2026
+
+Clinical indication: Developmental delay, feeding difficulties, recurrent infections,
+suspected velopharyngeal insufficiency.
+
+Test performed: Chromosomal microarray (CMA), oligonucleotide array-CGH platform,
+approximately 60,000 probes, genome build GRCh38.
+
+RESULT
+
+arr[GRCh38] 22q11.21(18,924,718-21,111,383)x1
+
+A 2.2 Mb deletion at 22q11.21 was identified. This interval corresponds to the recurrent
+22q11.2 deletion region and encompasses the low copy repeat blocks LCR22A to LCR22D.
+
+Classification: Pathogenic
+
+Parental testing has not been performed. Testing of both parents is recommended to
+determine whether the deletion is de novo or inherited.
+
+Limitations: This assay does not detect balanced rearrangements, point mutations, or
+low-level mosaicism below approximately 20%.

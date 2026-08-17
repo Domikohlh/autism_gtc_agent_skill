@@ -23,6 +23,9 @@ Usage:
     python gene_lookup.py --list
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import re

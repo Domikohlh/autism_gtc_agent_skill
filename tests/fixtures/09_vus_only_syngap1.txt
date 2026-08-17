@@ -1,0 +1,30 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Northfield Genetic Diagnostics
+NEURODEVELOPMENTAL GENE PANEL — REPORT
+
+Patient: Specimen, Testcase H          DOB: 25/12/2018
+MRN: 2245609
+Date of collection: 07 January 2026
+Date of report: 30 January 2026
+
+Indication: Developmental delay, autism spectrum diagnosis.
+
+Test performed: Targeted gene panel, neurodevelopmental disorders, version 4.2
+(412 genes). Panel content is fixed at the version date above.
+
+RESULT
+
+Gene: SYNGAP1
+Transcript: NM_006772.3
+Variant: c.1685C>T (p.Pro562Leu)
+Zygosity: heterozygous
+Inheritance: not determined — parental samples not received
+Classification: Variant of uncertain significance
+
+No pathogenic or likely pathogenic variants were identified.
+
+Interpretation: the significance of this variant is uncertain. It has been observed at
+low frequency in population databases and computational predictions are conflicting.
+Parental testing would assist interpretation. This variant should not be used to guide
+clinical management at this time.

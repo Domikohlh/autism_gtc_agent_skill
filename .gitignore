@@ -15,3 +15,9 @@ patient_data/
 findings*.json
 brief*.md
 !docs/**
+
+# The synthetic test corpus is the one exception, and it is only an exception
+# because every patient, laboratory and record number in it is invented. Nothing
+# real goes in here — put working copies of real reports anywhere else, where the
+# rules above still apply.
+!tests/fixtures/**

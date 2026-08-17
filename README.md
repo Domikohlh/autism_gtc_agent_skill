@@ -156,6 +156,12 @@ gene-to-care-navigator/
 │   ├── parse_report.py               # report → findings JSON, identifiers redacted
 │   ├── gene_lookup.py                # gene / syndrome / cytoband → sources, domains, traps
 │   └── render_brief.py               # findings → two-register brief
+├── tests/
+│   ├── cases.md                      # per-fixture rubric, skill-layer scoring
+│   ├── adversarial_prompts.md        # guardrail pressure tests
+│   ├── no_trigger_prompts.md         # must-not-fire and boundary cases
+│   ├── smoke_test.py                 # parser regression + identifier leak scan
+│   └── fixtures/                     # 25 synthetic reports and VCFs — no real data
 └── docs/
     ├── workflow.png
     └── risk_layer.png
@@ -163,10 +169,35 @@ gene-to-care-navigator/
 
 ---
 
-## Scripts
+## Requirements
 
-All three are dependency-free Python 3.10+ except PDF reading, which needs either
-`pdfplumber` or `poppler-utils`.
+**Python 3.8+. No third-party packages required.**
+
+All three scripts run on the standard library alone. The only optional dependency is
+PDF text extraction, and even that has two routes:
+
+```bash
+pip install -r requirements.txt      # installs pdfplumber
+# or, instead:
+sudo apt install poppler-utils       # parse_report.py falls back to pdftotext
+```
+
+`parse_report.py` tries `pdfplumber` first, falls back to `pdftotext`, and on failure
+reports which routes it tried and what to do next — including an OCR pointer when a file
+opens but has no text layer, which is the usual shape of a scanned or photographed report.
+
+The scripts carry `from __future__ import annotations`, so modern type-hint syntax is
+never evaluated at runtime. That holds the floor at 3.8 rather than 3.10 — which matters,
+because clinical genetics services and HPC estates are conservative about Python versions
+and the interpreter should not be the reason a lab cannot run this.
+
+There is deliberately no HTTP client, LLM SDK, or bioinformatics stack here. The agent
+does retrieval through its own tooling; these scripts only parse, look up, and render.
+Code that touches health information is easier to audit when there is little to audit.
+
+---
+
+## Scripts
 
 ### `parse_report.py`
 
@@ -423,24 +454,38 @@ the right move is a better `sources` entry.
 ## Testing
 
 ```bash
+python tests/smoke_test.py                    # parser regression + identifier leak scan
 python scripts/gene_lookup.py --list          # index integrity
-python scripts/parse_report.py --text "NM_000314.8(PTEN):c.697C>T (p.Arg233Ter), heterozygous, pathogenic, de novo"
 ```
 
-Validated against synthetic de-identified reports only: a two-variant exome (pathogenic +
-VUS, block-structured), a column-layout exome with the classification to the left of the
-variant, a 22q11.2 microarray in both ISCN and prose, a negative 2021 microarray, an
-FMR1 repeat-expansion report, annotated (SnpEff and VEP) and unannotated VCFs, and an
-inline HGVS string. Alongside those, the cases that must produce *nothing*: a sentence
-naming two different CNVs across a conjunction, and a negative report mentioning a band
-in a coverage statement.
+Testing splits into two layers, and only one of them can be automated.
 
-The PHI check fires on injected identifiers, and the parser's redaction is exercised
-against a header carrying name, DOB, MRN, accession and email.
+**Parser layer** — `tests/smoke_test.py` runs 25 synthetic fixtures in `tests/fixtures/`
+through `parse_report.py` and asserts what came out: gene, classification, zygosity, the
+date it chose, CNV band and kind, repeat sizes, and which warnings fired. Expectations
+were recorded from verified runs rather than written from intent, so a failure means
+behaviour changed — read the diff before editing the expectation. It also runs a leak
+scan of every planted identifier against *every* fixture's output, because a per-fixture
+check passes by luck whenever the context window did not reach the header.
 
-**Never tested against a real patient report, and testing against one is not a casual
-step** — see [Data privacy](#data-privacy-and-confidentiality) before using clinical
-material for this.
+The corpus covers the layouts (block, column, prose summary, results-page-only, clinic
+letter, German), the scenarios (Tier 1 tumour predisposition, recurrent CNVs, urgent
+cardiac and epilepsy findings, VUS-only, a VUS *in* a Tier 1 gene, secondary findings,
+repeat expansions, an uncurated gene, stale and recent negatives, mosaicism), the VCF
+variants (SnpEff, VEP, unannotated, trio), and the cases that must produce **nothing** —
+a reciprocal region named for contrast, two CNVs across a conjunction, a band in a
+coverage statement.
+
+**Skill layer** — `tests/cases.md` carries the per-fixture rubric: what the parser must
+extract, and separately what the *brief* must do with it. That half is scored by hand,
+because the failures that matter are judgement failures. `tests/adversarial_prompts.md`
+pressure-tests the guardrails (risk numbers, PRS requests, prognosis, dosing, VUS
+pressure, embedded prompt injection); `tests/no_trigger_prompts.md` checks the skill does
+not fire on everything.
+
+Everything in `tests/fixtures/` is synthetic — invented patients, laboratories and record
+numbers. **No real patient report has been through this repository, and doing so is not a
+casual step** — see [Data privacy](#data-privacy-and-confidentiality) first.
 
 ---
 

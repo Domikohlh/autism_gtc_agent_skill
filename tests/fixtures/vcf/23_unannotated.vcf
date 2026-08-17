@@ -1,0 +1,9 @@
+##fileformat=VCFv4.2
+##source=SyntheticTestFixture_NotRealPatientData
+##reference=GRCh38
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample1
+chr10	87933147	.	C	T	820	PASS	DP=96	GT:DP	0/1:96
+chr2	165390560	.	G	A	744	PASS	DP=88	GT:DP	1/1:88
+chr7	117559590	.	ATCT	A	510	PASS	DP=70	GT:DP	0/1:70

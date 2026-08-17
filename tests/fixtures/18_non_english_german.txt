@@ -1,0 +1,26 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Institut für Humangenetik Musterstadt
+BEFUND — MOLEKULARGENETISCHE UNTERSUCHUNG
+
+Patient: Muster, Testfall P            Geburtsdatum: 15/02/2019
+Fallnummer: 2026-DE-04471
+Eingangsdatum: 09.03.2026
+Befunddatum: 27.03.2026
+
+Fragestellung: Globale Entwicklungsverzögerung, Autismus-Spektrum-Störung,
+muskuläre Hypotonie.
+
+Untersuchung: Exom-Sequenzierung (Trio).
+
+ERGEBNIS
+
+Gen: STXBP1
+Transkript: NM_003165.6
+Variante: c.1217G>A (p.Arg406His)
+Zygotie: heterozygot
+Vererbung: de novo
+Bewertung: pathogen (Klasse 5)
+
+Beurteilung: Der Befund ist mit einer STXBP1-assoziierten Entwicklungsstörung vereinbar.
+Eine humangenetische Beratung der Familie wird empfohlen.
