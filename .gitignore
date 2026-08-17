@@ -6,6 +6,9 @@ venv/
 .idea/
 .vscode/
 
+# Build output of scripts/bundle_skill.py — regenerate it, don't commit it.
+dist/
+
 # Never commit real reports or anything derived from them.
 # This project touches health data; keep it out of version control by default.
 *.vcf
@@ -20,4 +23,14 @@ brief*.md
 # because every patient, laboratory and record number in it is invented. Nothing
 # real goes in here — put working copies of real reports anywhere else, where the
 # rules above still apply.
-!tests/fixtures/**
+!tests/fixtures/
+!tests/fixtures/*.txt
+!tests/fixtures/reports/
+!tests/fixtures/reports/*.txt
+!tests/fixtures/scenarios/
+!tests/fixtures/scenarios/*.txt
+!tests/fixtures/vcf/
+!tests/fixtures/vcf/*.vcf
+!tests/fixtures/vcf/*.txt
+!tests/fixtures/vcf_as_txt/
+!tests/fixtures/vcf_as_txt/*.txt

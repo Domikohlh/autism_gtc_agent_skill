@@ -86,3 +86,37 @@ done so.
 - **Multiple findings** — rank by classification first (P/LP before VUS), then by
   whether Tier 1 surveillance content exists. Do not bury a PTEN finding under three VUS.
 - **De-identify before writing to any file.** Strip names, DOB, MRN, ordering clinician.
+
+## File formats, and what a conversion costs
+
+**`.vcf` is preferred. `.txt` is the fallback when a platform refuses it.** Some platforms
+accept `.vcf` uploads; several do not. Format is detected from content — the `##fileformat`
+or `#CHROM` line — never from the extension, so `results.vcf` renamed to `results.vcf.txt`
+parses **identically**. Say this plainly when someone reports an upload failing; it is a
+two-second fix that otherwise ends the conversation.
+
+What costs information is not the rename, it is what a *conversion* does to the content:
+
+| What reached you | What survives | What is lost |
+|---|---|---|
+| `.vcf`, or a clean rename to `.txt` | everything | nothing |
+| `##` header lines stripped, SnpEff `ANN` | gene, HGVS, classification, zygosity | nothing material — ANN field order is fixed by spec |
+| `##` header lines stripped, VEP `CSQ` | zygosity, genomic position | **gene and HGVS** — CSQ field order lived in that header |
+| `#CHROM` line also gone (data rows only) | gene and HGVS, read out of the `ANN=` text | **zygosity, homozygous-reference exclusion, sample identity**, and the VCF caveat |
+| Tabs turned to spaces by a paste | rows are recovered | a field containing a space could mis-split — declared in `warnings` |
+
+**The parser names which of these happened in `warnings`.** Then:
+
+- **Ask for what was lost, when it is worth asking.** The audience here is often a
+  bioinformatician or clinical scientist who can simply supply it: the original file, or
+  the one `##INFO=<ID=CSQ,...Format: ...>` line, or the genotypes. Ask specifically —
+  "the CSQ format header" is actionable, "the file seems incomplete" is not.
+- **If they cannot or will not supply it, proceed anyway with what you have** — and state
+  in the brief how it changed the answer. Not a generic caveat: the specific consequence.
+  Without genotypes you cannot say whether a variant is heterozygous or homozygous, and
+  you cannot tell a variant the person carries from a homozygous-reference row they do
+  not — so findings are *candidates*, not confirmed. Without CSQ decoding you have
+  positions and no gene, which means no `gene_lookup.py` and no Tier 1 content at all.
+  Say which, and carry on with the rest.
+- **Never reconstruct a lost field by inference.** A missing genotype is missing, not
+  assumed heterozygous.

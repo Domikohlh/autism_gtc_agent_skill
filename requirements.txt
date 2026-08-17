@@ -1,42 +1,4 @@
-# Gene-to-Care Navigator — dependencies
-#
-# The scripts run on the Python standard library alone. Nothing here is
-# required for core function; the single entry below is optional and only
-# affects PDF handling.
-#
-#   parse_report.py   stdlib + optional pdfplumber (see below)
-#   gene_lookup.py    stdlib only
-#   render_brief.py   stdlib only
-#
-# Python 3.8 or newer. The scripts use `from __future__ import annotations`,
-# so modern type-hint syntax is never evaluated at runtime — which keeps them
-# usable in the conservative Python environments common in clinical genetics
-# and HPC estates.
-#
-# ---------------------------------------------------------------------------
-# Optional: PDF text extraction
-# ---------------------------------------------------------------------------
-# Families and clinics share reports as PDFs, so in practice you will want
-# one of these. parse_report.py tries pdfplumber first, then falls back to the
-# `pdftotext` binary from poppler-utils, and raises a clear error if neither
-# is present.
-#
-# Either install this package:
-
+# Python 3.10+. Optional: needed only for PDF input — parse_report.py falls
+# back to the `pdftotext` binary (poppler-utils) and errors clearly if neither
+# is present. Everything else is standard library.
 pdfplumber>=0.11.0
-
-# ...or install poppler-utils at the system level instead and delete the line
-# above:
-#
-#   Debian/Ubuntu   sudo apt install poppler-utils
-#   macOS           brew install poppler
-#   RHEL/Fedora     sudo dnf install poppler-utils
-#
-# ---------------------------------------------------------------------------
-# Deliberately absent
-# ---------------------------------------------------------------------------
-# No HTTP client, no LLM SDK, no bioinformatics stack. The agent performs
-# retrieval from authoritative sources through its own tooling; these scripts
-# only parse, look up, and render. Keeping them dependency-light means they
-# stay auditable and runnable anywhere — which matters for code that touches
-# health information.

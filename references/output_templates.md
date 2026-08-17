@@ -55,13 +55,56 @@ this to them.
 
 **Tone notes for Template A**
 
-- Short sentences. No jargon without immediate explanation.
 - Identity-first language ("autistic person") unless the user's own usage differs.
 - Never speculate about capability, independence, or trajectory.
 - Do not use the word "risk" more than necessary; "worth monitoring" carries the same
   information with less alarm.
 - If there is genuinely good news — a manageable finding, an active research community,
   an available treatment — say so plainly. Families get very little of that.
+
+### Register discipline — read this before writing the family half
+
+Testing showed the family register drifting long, technical and tutorial: definitions the
+reader did not ask for, citations mid-sentence, and a teaching voice. All three make it
+harder to use, and the family half is the one most people will actually read.
+
+**The fix for a technical term is deletion, not definition.** A tutor explains
+"haploinsufficiency"; a useful brief never uses the word. Define a term only when the
+family will have to say it themselves — the gene symbol and the syndrome name, because
+those are what they need to find their community, book the right clinic, and search. Every
+other term should be replaced by what it means in practice, not followed by a gloss.
+
+- ✗ "This is a de novo loss-of-function variant, meaning it arose spontaneously rather
+  than being inherited, and results in haploinsufficiency of the gene product."
+- ✓ "This change was not inherited from either parent — it happened for the first time in
+  your daughter."
+
+**No citations in the family half.** No journal names, no author-year, no URLs mid-sentence.
+The evidence belongs in the clinician section, which is where anyone checking it will look.
+Where a family needs to know a protocol exists, name the body that publishes it in plain
+words — "there is a published monitoring schedule, and your genetics team will have it" —
+and nothing more.
+
+**Be directive.** Say who does what next. "Ask your GP to refer you to clinical genetics"
+is usable; "it may be worth considering whether a referral would be appropriate" is not.
+Where the reader has a decision to make, say what the options are and who decides.
+
+**Translating from a technical source.** When the input is an existing document rather
+than a parsed report — a clinician's letter, a report's interpretation paragraph — run
+`scripts/plain_language.py` over it first. It names every term and the traps. Two rules
+sit above the rest: a classification is never promoted (likely pathogenic is not
+pathogenic), and an uncertainty the source left open stays open in plainer words. A
+caveat that vanishes because it was awkward to phrase reads as certainty the report did
+not have.
+
+**Length.** Aim for one screen per section and under 800 words for the whole family half.
+If a section needs more, it is usually carrying clinician content that belongs in the other
+register. Cut rather than compress — a shorter brief that gets read beats a complete one
+that does not.
+
+**Order by what they do next**, not by what is scientifically interesting. Anything
+time-critical goes first. What was found comes before what it means. What to do comes
+before why.
 
 ---
 
@@ -106,9 +149,26 @@ implication, route to genetic counselling. Do not counsel here.]
 [Explicitly: what this result does not establish. Any VUS and why it is not actionable.
 Where direction of effect is unknown and why that matters clinically.]
 
+## Testing performed, and what it could not detect
+[The assay's blind spots, from `indication_lookup.py --had`. Mechanical and near-certain:
+a microarray cannot see sequence variants; a panel cannot see genes described after its
+version date — state the version or say it must be obtained; an exome sees most repeat
+expansions poorly; FMR1 repeat sizing is a separate assay. State the gap; do not inflate
+it into a diagnosis-in-waiting.]
+
+## Further testing indicated
+[What is recommended for this clinical picture, and by which named authority, quoted with
+a retrieval date. Distinguish explicitly:
+  · clinical recommendation — published, and it travels;
+  · eligibility — a policy question for the health system and clinical service.
+Never assert eligibility. Where the report is non-diagnostic and older than roughly two
+years, reanalysis of existing data and new testing are different requests — say which is
+being described. See `references/testing_indications.md`.]
+
 ## Suggested next steps
 [Parental/segregation testing. Reanalysis timing if the report is stale. Referrals.
-RNA or functional testing if it would resolve a specific question — name the question.]
+RNA or functional testing if it would resolve a specific question — name the question.
+Who holds each action.]
 
 ## Sources
 [Every clinical assertion above, with retrieval date.]
@@ -122,6 +182,13 @@ RNA or functional testing if it would resolve a specific question — name the q
 - State evidence strength explicitly. "Consensus guideline" and "single case series" are
   different things and the distinction changes what a clinician does.
 - Retrieval dates on everything. Guidelines move.
+- **The testing-gap sections are for this register, not the family one.** A clinician,
+  clinical scientist or bioinformatician picks up the follow-up here: what was not
+  covered, what is indicated, whose authority says so, what to request. The family half
+  gets at most one plain directive line — "the 2019 test could not look at individual
+  genes; ask the genetics team whether sequencing is available now" — and never the
+  citations. Splitting it this way is the point: the detail is useful to the person who
+  can act on it and is noise to the person who cannot.
 
 ---
 

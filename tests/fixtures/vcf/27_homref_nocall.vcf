@@ -1,0 +1,11 @@
+##fileformat=VCFv4.2
+##source=SyntheticTestFixture_NotRealPatientData
+##reference=GRCh38
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p'">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample1
+chr10	87933147	.	C	T	820	PASS	ANN=T|stop_gained|HIGH|PTEN|ENSG00000171862|transcript|NM_000314.8|protein_coding|7/9|c.697C>T|p.Arg233Ter	GT:DP	0/0:96
+chr2	165390560	.	G	A	744	PASS	ANN=A|missense_variant|MODERATE|SCN2A|ENSG00000136531|transcript|NM_001040142.2|protein_coding|27/27|c.5645G>A|p.Arg1882Gln	GT:DP	./.:12
+chr14	21386218	.	T	C	612	PASS	ANN=C|missense_variant|MODERATE|CHD8|ENSG00000100888|transcript|NM_001170629.2|protein_coding|31/38|c.4837A>G|p.Ile1613Val	GT:DP	0/1:74
+chr6	31164337	.	C	T	500	PASS	ANN=T|stop_gained|HIGH|ARID1B|ENSG00000049618|transcript|NM_020732.3|protein_coding|9/20|c.4318C>T|p.Arg1440Ter	GT:DP	0|0:88

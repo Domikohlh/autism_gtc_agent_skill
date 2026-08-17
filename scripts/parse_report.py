@@ -4,20 +4,25 @@ Extract structured findings from a genetic test report.
 
 Handles plain text, PDF (via pdfplumber or pdftotext), and VCF. Emits JSON.
 
+Format is detected from content, not from the file extension, so a VCF renamed
+to .txt — which several upload platforms require — parses identically.
+
 This is a first-pass extractor: it finds candidate fields and flags what it is
 unsure about. It is deliberately conservative — it would rather report
 `needs_review` than assert a wrong variant string. Always eyeball the output
 against the source before using it.
 
-Identifiers (name, DOB, MRN, NHS number, accession) are redacted from the
-emitted context by default, and dates labelled as birth or collection dates are
-never surfaced. Pass --no-redact only when debugging against a synthetic report.
+Identifiers (name, DOB, record/hospital number, NHS number, accession, email)
+are redacted from the whole document before parsing begins, and dates labelled
+as birth or collection dates are never surfaced. The ruleset is in phi.py,
+shared with render_brief.py. Pass --no-redact only when debugging against a
+synthetic report.
 
 Usage:
     python parse_report.py report.pdf
     python parse_report.py report.txt --json out.json
     python parse_report.py --text "SCN2A c.5645G>A p.(Arg1882Gln) heterozygous, pathogenic"
-    python parse_report.py annotated.vcf
+    python parse_report.py annotated.vcf        # or annotated.vcf.txt — content decides
 """
 
 from __future__ import annotations
@@ -30,6 +35,12 @@ import subprocess
 import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
+
+try:
+    from phi import DATE_SRC, redact
+except ImportError:  # imported as a module from outside scripts/
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from phi import DATE_SRC, redact
 
 # --------------------------------------------------------------------------
 # Patterns
@@ -134,6 +145,23 @@ REPEAT_ALLELES = re.compile(
     r"\balleles?\s*[:：]?\s*(?P<a>\d{1,4})\s*(?:and|,|/|&)\s*(?P<b>\d{1,4})", re.IGNORECASE
 )
 
+# Almost every exome and microarray report says, in its limitations paragraph,
+# that the assay does not detect repeat expansions. Read literally that is a
+# repeat result, and because it makes `repeats` non-empty it also suppresses the
+# "nothing detected" warning — so a negative report came back with a fabricated
+# finding and no warnings at all. The plural "expansions" happened to escape the
+# `\b` in the cue; the singular did not, which is luck rather than design.
+#
+# Same shape as CNV_REFERENTIAL: matched against the sentence the cue sits in.
+REPEAT_NEGATED = re.compile(
+    r"(?:does\s+not\s+(?:detect|include|cover|assess|analy[sz]e|reliably)"
+    r"|cannot\s+(?:detect|be\s+detected|exclude)|will\s+not\s+detect|unable\s+to\s+detect"
+    r"|not\s+(?:detected|assessed|analy[sz]ed|performed|tested|examined|included|covered|reported)"
+    r"|no\s+(?:evidence\s+of|expansion)|excluded\s+from|outside\s+the\s+scope"
+    r"|beyond\s+the\s+scope|limitations?\s*[:：]|separate\s+assay\s+is\s+required)",
+    re.IGNORECASE,
+)
+
 REPEAT_CATEGORIES = [
     ("full mutation", "full mutation"),
     ("pre-?mutation", "premutation"),
@@ -195,12 +223,7 @@ TEST_TYPES = [
     ("repeat expansion", "repeat expansion"),
 ]
 
-DATE_SRC = (
-    r"\d{4}-\d{2}-\d{2}"
-    r"|\d{1,2}[./-]\d{1,2}[./-]\d{2,4}"  # the dotted form is standard across Europe
-    r"|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}"
-    r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}"
-)
+# DATE_SRC is imported from phi, which needs it for the date-of-birth rule.
 DATE = re.compile(rf"\b(?:{DATE_SRC})\b", re.IGNORECASE)
 
 # Which date is the report date matters: staleness drives the reanalysis
@@ -257,79 +280,10 @@ GENE_STOPLIST = {
 # De-identification
 # --------------------------------------------------------------------------
 
-# Applied to every context string before it leaves this script. The parser's
-# JSON is the artefact most likely to be written to disk, so it must not carry
-# identifiers out of the report (guardrail 7 in SKILL.md).
-#
-# Order matters. The labelled identifiers are removed first, so that by the time
-# the name rule runs, a following "DOB:" or "MRN:" has already become a bracketed
-# placeholder and cannot be mistaken for another word of the name. Nothing here
-# consumes to end of line: contexts are whitespace-joined before redaction, so a
-# greedy rule would eat the variant along with the identifier.
-# One to four capitalised words on a single line, none of which is itself a
-# field label. See the comment on the name rules below for why both constraints
-# matter.
-_NAME_TOKENS = r"(?:(?![\w'’\-]+[ \t]*[:：])[A-Z][\w'’\-]*,?[ \t]*){1,4}"
-
-PHI_REDACTIONS = [
-    (re.compile(r"\b(?:d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date|geburtsdatum"
-                rf"|fecha\s+de\s+nacimiento|date\s+de\s+naissance)\s*[:：]?\s*(?:{DATE_SRC})",
-                re.IGNORECASE), "[DOB REDACTED]"),
-    # Labs name this field a dozen ways; matching only "MRN" leaks the rest.
-    (re.compile(r"\b(?:MRN|(?:medical\s+record|hospital|record|chart|case|lab(?:oratory)?"
-                r"|patient|episode|referral)\s*(?:no\.?|number|id|#)"
-                r"|patient\s*id"
-                r"|fallnummer|patientennummer|aktenzeichen"
-                r"|n(?:ú|u)mero\s+de\s+historia|num(?:é|e)ro\s+de\s+dossier)"
-                # Require a digit in the value. Without it, "Referral number: see
-                # below" redacts the word "see", and worse, prose values get eaten.
-                r"\s*[:：#]?[ \t]*(?=[\w-]*\d)[\w-]+", re.IGNORECASE),
-     "[RECORD NUMBER REDACTED]"),
-    (re.compile(r"\bNHS\s*(?:no\.?|number)?\s*[:：]?\s*\d[\d ]{8,12}", re.IGNORECASE),
-     "[NHS NUMBER REDACTED]"),
-    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[SSN-SHAPED REDACTED]"),
-    # The value must contain a digit, or this eats the specimen TYPE — and
-    # "Specimen: peripheral blood" vs "fibroblast" vs "saliva" is clinically
-    # load-bearing: it governs how a mosaic result is interpreted and whether
-    # RNA testing on that tissue would be informative. Redacting an accession
-    # number is required; redacting the tissue destroys evidence.
-    (re.compile(r"\b(?:accession|specimen|sample)\s*(?:no\.?|number|id|#)?\s*[:：#][ \t]*"
-                r"(?=[A-Z0-9\-]*\d)[A-Z0-9][A-Z0-9\-]{3,}",
-                re.IGNORECASE), "[ACCESSION REDACTED]"),
-    # Multi-label domains need the repeated group, or lab@genomics.nhs.uk
-    # redacts to "[EMAIL REDACTED].uk".
-    (re.compile(r"\b[\w.\-]+@[\w\-]+(?:\.[\w\-]+)*\.[A-Za-z]{2,}\b"), "[EMAIL REDACTED]"),
-    # "Gene name:" is a real field on many reports, so only `patient` triggers
-    # the name rule mid-line; a bare "Name:" is only honoured at line start.
-    #
-    # _NAME_TOKENS is deliberately newline-free and label-aware. With `\s*`
-    # between tokens the match runs past the end of the line and swallows the
-    # NEXT field's label — "Patient Name: Jane Doe\nGene: PTEN" became
-    # "[NAME REDACTED] : PTEN", which strips the authoritative `Gene:` label and
-    # forces the parser onto its guess-from-prose fallback. `[ \t]*` keeps the
-    # match on one line; the lookahead stops it before any token that is itself
-    # a field label, which is what protects column layouts where two fields
-    # share a line.
-    (re.compile(r"\b(?:patient(?:'s)?(?:\s+name)?|pt\.?\s+name)\s*[:：][ \t]*"
-                + _NAME_TOKENS, re.IGNORECASE), "[NAME REDACTED] "),
-    (re.compile(r"(?:^|\n)[ \t]*name\s*[:：][ \t]*" + _NAME_TOKENS, re.IGNORECASE),
-     "\n[NAME REDACTED] "),
-]
-
-
-def redact(text: str) -> str:
-    """
-    Strip labelled identifiers from a document.
-
-    Applied to the WHOLE document at the input boundary, before any parsing, so
-    that no context window can ever be cut in a way that separates an identifier
-    from the label that identifies it. Redacting the extracted windows instead
-    leaks the value whenever the window happens to slice through its label —
-    which is exactly what a short report does.
-    """
-    for pattern, replacement in PHI_REDACTIONS:
-        text = pattern.sub(replacement, text)
-    return text
+# The ruleset lives in phi.py and is shared with render_brief.py, so that the
+# script writing the final document and the script reading the report agree on
+# what an identifier is. They did not, and the renderer's list was the shorter
+# one. `redact` is imported at the top of this file.
 
 
 # --------------------------------------------------------------------------
@@ -503,6 +457,20 @@ def find_last(text: str, patterns: list[tuple[str, str]]) -> str | None:
 
 def window(text: str, start: int, end: int, pad: int = 220) -> str:
     return " ".join(text[max(0, start - pad):min(len(text), end + pad)].split())
+
+
+def sentence_before(text: str, pos: int, limit: int = 240) -> str:
+    """
+    The fragment of the sentence running up to `pos`.
+
+    Used to test whether a match sits inside a negation without letting the
+    previous sentence's wording carry over. Deliberately does not break on a
+    colon or a single newline: "Limitations:\\nrepeat expansion testing was not
+    performed" is one statement laid out over two lines, and the word that makes
+    it a negation is on the first of them.
+    """
+    chunk = text[max(0, pos - limit):pos]
+    return re.split(r"(?<=[.;])\s|\n[ \t]*\n", chunk)[-1]
 
 
 def resolve_gene(before: str, inline: str | None) -> tuple[str | None, str]:
@@ -761,8 +729,15 @@ def parse_repeats(text: str) -> list[RepeatExpansion]:
 
     Sizes are reported, never interpreted. Category thresholds are gene- and
     assay-specific and belong to the source.
+
+    Cues inside a negation are dropped before clustering, so that a limitations
+    paragraph cannot manufacture a repeat result — nor suppress the "nothing
+    detected" warning by making this list non-empty.
     """
-    cues = list(REPEAT_CUE.finditer(text))
+    cues = [
+        m for m in REPEAT_CUE.finditer(text)
+        if not REPEAT_NEGATED.search(sentence_before(text, m.start()))
+    ]
     if not cues:
         return []
 
@@ -829,31 +804,69 @@ ANN_GENE, ANN_FEATURE, ANN_HGVS_C, ANN_HGVS_P = 3, 6, 9, 10
 
 MAX_VCF_RECORDS = 200
 
+# A VCF is recognised by its content, never its extension. Several platforms
+# refuse .vcf uploads, so these arrive renamed to .txt or pasted in whole — and
+# a paste often loses the `##fileformat` line, leaving `#CHROM` as the only
+# marker. Without this, such a file falls through to the prose parser, which
+# picks HGVS out of the ANN= field and looks like it worked while silently
+# dropping zygosity, the CLNSIG classification, the homozygous-reference
+# exclusion, and the warning that a VCF carries no interpretation.
+VCF_FILEFORMAT = re.compile(r"^##fileformat=VCF", re.MULTILINE)
+VCF_COLUMN_HEADER = re.compile(r"^#CHROM\s+POS\s+ID\s+REF\s+ALT", re.MULTILINE)
 
-def zygosity_from_gt(gt: str, chrom: str) -> str | None:
+
+def looks_like_vcf(text: str) -> bool:
+    head = text[:8000]
+    return bool(VCF_FILEFORMAT.search(head) or VCF_COLUMN_HEADER.search(head))
+
+
+# Genotype call status. `reference` is the one that matters most: a 0/0 row
+# means the sample does NOT carry that variant, and emitting it as a finding
+# manufactures a result the person does not have — which, for a stop-gained in
+# a tumour-predisposition gene, routes to real Tier 1 surveillance.
+GT_CARRIED, GT_REFERENCE, GT_NOCALL, GT_UNKNOWN = "carried", "reference", "no-call", "unknown"
+
+
+def interpret_gt(gt: str, chrom: str) -> tuple[str, str | None]:
+    """Return (call status, zygosity). Zygosity is only meaningful when carried."""
     alleles = [a for a in re.split(r"[/|]", gt) if a]
-    if not alleles or any(a == "." for a in alleles):
-        return None
+    if not alleles:
+        return GT_UNKNOWN, None
+    if all(a == "." for a in alleles):
+        return GT_NOCALL, None
+    if any(a == "." for a in alleles):
+        return GT_UNKNOWN, None  # partially called, e.g. ./1
+    if all(a == "0" for a in alleles):
+        return GT_REFERENCE, None
     if len(alleles) == 1:
-        return "hemizygous" if chrom.upper().removeprefix("CHR") in {"X", "Y"} else None
+        return GT_CARRIED, "hemizygous" if chrom.upper().removeprefix("CHR") in {"X", "Y"} else None
     if len(set(alleles)) == 1:
-        return None if alleles[0] == "0" else "homozygous"
+        return GT_CARRIED, "homozygous"
     if "0" in alleles:
-        return "heterozygous"
-    return "compound heterozygous"  # two different alt alleles, e.g. 1/2
+        return GT_CARRIED, "heterozygous"
+    return GT_CARRIED, "compound heterozygous"  # two different alt alleles, e.g. 1/2
 
 
-def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
+def parse_vcf(text: str, source: str | None = None, sample: str | None = None) -> ReportRecord:
     """
     Parse a VCF into the same record shape.
 
     A VCF is not a clinical report: unless it carries VEP/SnpEff annotation it
     has no gene symbol, no HGVS and no classification, and even annotated it has
     no interpretation. That gap is stated in `warnings` rather than papered over.
+
+    Which sample column is read is stated too. A trio VCF is not reliably
+    proband-first — samples are as often alphabetical — so reading column 10 and
+    saying nothing reports one family member's genotypes under another's name.
     """
     rec = ReportRecord(source_file=source)
     csq_fields: list[str] | None = None
+    sample_names: list[str] = []
+    sample_index = 0
     unannotated = 0
+    reference_calls = 0
+    detabbed = 0
+    csq_header_missing = 0
 
     for line in text.splitlines():
         if line.startswith("##"):
@@ -861,10 +874,28 @@ def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
                 fmt = line.split("Format:", 1)[1].strip().rstrip('">')
                 csq_fields = [f.strip() for f in fmt.split("|")]
             continue
+        if line.startswith("#CHROM"):
+            sample_names = line.rstrip("\n").split("\t")[9:]
+            if sample:
+                if sample in sample_names:
+                    sample_index = sample_names.index(sample)
+                else:
+                    rec.warnings.append(
+                        f"Requested sample '{sample}' is not in this VCF. Samples present: "
+                        + ", ".join(sample_names) + ". No genotypes were read."
+                    )
+                    sample_index = -1
+            continue
         if line.startswith("#") or not line.strip():
             continue
 
         cols = line.rstrip("\n").split("\t")
+        if len(cols) < 8 and len(line.split()) >= 8:
+            # Tabs turn into spaces when a VCF is pasted into a text file or
+            # through a rich-text field. VCF fields contain no spaces, so
+            # splitting on whitespace recovers the row rather than dropping it.
+            cols = line.split()
+            detabbed += 1
         if len(cols) < 8:
             continue
         if len(rec.variants) >= MAX_VCF_RECORDS:
@@ -884,6 +915,13 @@ def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
 
         ann = info_map.get("ANN") or info_map.get("EFF")
         csq = info_map.get("CSQ")
+        if csq and not csq_fields:
+            # VEP writes CSQ field order into ##INFO=<ID=CSQ,...Format: ...>.
+            # Strip the ## headers — as pasting into a text file often does —
+            # and the annotation becomes undecodable: the values are all still
+            # there, but nothing says which is the gene. SnpEff's ANN survives
+            # the same treatment because its field order is fixed by spec.
+            csq_header_missing += 1
         if ann:
             fields = ann.split(",")[0].split("|")
             if len(fields) > ANN_HGVS_P:
@@ -907,13 +945,25 @@ def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
         if clnsig:
             v.classification = find_first(clnsig.replace("_", " "), CLASSIFICATIONS)
 
-        if len(cols) >= 10:
+        status = GT_UNKNOWN
+        col = 9 + sample_index
+        if sample_index >= 0 and len(cols) > col:
             keys = cols[8].split(":")
             if "GT" in keys:
-                sample = cols[9].split(":")
+                values = cols[col].split(":")
                 idx = keys.index("GT")
-                if idx < len(sample):
-                    v.zygosity = zygosity_from_gt(sample[idx], chrom)
+                if idx < len(values):
+                    status, v.zygosity = interpret_gt(values[idx], chrom)
+
+        if status == GT_REFERENCE:
+            # The sample does not carry this variant. Not a finding.
+            reference_calls += 1
+            continue
+        if status == GT_NOCALL:
+            v.needs_review.append(
+                "genotype not called in this sample — the variant may or may not be "
+                "present; this record establishes neither"
+            )
 
         if not v.gene:
             unannotated += 1
@@ -923,8 +973,10 @@ def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
             )
         if not v.classification:
             v.needs_review.append("no classification in this VCF — a VCF does not carry one")
-        if not v.zygosity:
-            v.needs_review.append("zygosity not derivable — no usable GT field")
+        if not v.zygosity and status == GT_UNKNOWN:
+            # Only when the genotype was genuinely unreadable. A no-call already
+            # carries its own, more accurate note.
+            v.needs_review.append("zygosity not derivable — no usable GT field for this sample")
 
         v.raw_context = " ".join(line.split())[:400]
         rec.variants.append(v)
@@ -934,13 +986,39 @@ def parse_vcf(text: str, source: str | None = None) -> ReportRecord:
         "phenotype and secondary-finding status live in the laboratory's report, not here. "
         "Ask for the report before writing anything clinical."
     )
+    if len(sample_names) > 1 and sample_index >= 0:
+        rec.warnings.append(
+            f"This VCF has {len(sample_names)} samples ({', '.join(sample_names)}). "
+            f"Genotypes were read from '{sample_names[sample_index]}'. Confirm that is the "
+            "individual the report concerns — sample order is a convention, not a rule. "
+            "Use --sample NAME to choose another."
+        )
+    if csq_header_missing:
+        rec.warnings.append(
+            f"{csq_header_missing} record(s) carry VEP CSQ annotation whose format header "
+            "(##INFO=<ID=CSQ,...Format: ...>) is missing, so gene and HGVS could not be "
+            "read — the values are present but nothing states their order. This is what "
+            "stripping the ## header lines costs. Ask for the original file, or for that "
+            "one header line."
+        )
+    if detabbed:
+        rec.warnings.append(
+            f"{detabbed} row(s) were tab-free and had to be split on spaces — this file "
+            "has been through a conversion that lost its tabs. Fields containing spaces "
+            "would be mis-split; check the output against the original."
+        )
+    if reference_calls:
+        rec.warnings.append(
+            f"{reference_calls} record(s) were homozygous reference in the sample read "
+            "and were excluded — the sample does not carry those variants."
+        )
     if unannotated:
         rec.warnings.append(
             f"{unannotated} record(s) had no gene annotation — gene, HGVS and consequence "
             "could not be derived."
         )
     if not rec.variants:
-        rec.warnings.append("No VCF data lines found.")
+        rec.warnings.append("No VCF data lines found with a variant carried by this sample.")
 
     return rec
 
@@ -1027,20 +1105,18 @@ def finalise_warnings(rec: ReportRecord) -> ReportRecord:
     return rec
 
 
-def parse_text(text: str, source: str | None = None, do_redact: bool = True) -> ReportRecord:
+def parse_text(text: str, source: str | None = None, do_redact: bool = True,
+               sample: str | None = None) -> ReportRecord:
     """Redact first, then parse — see `redact` for why the order matters."""
     if do_redact:
         text = redact(text)
-    if text.lstrip().startswith("##fileformat=VCF"):
-        return finalise_warnings(parse_vcf(text, source=source))
+    if looks_like_vcf(text):
+        return finalise_warnings(parse_vcf(text, source=source, sample=sample))
     return parse(text, source=source)
 
 
-def parse_path(path: Path, do_redact: bool = True) -> ReportRecord:
-    text = read_text(path)
-    if path.suffix.lower() == ".vcf" and not text.lstrip().startswith("##fileformat=VCF"):
-        text = "##fileformat=VCFv4.2\n" + text  # tolerate a headerless .vcf
-    return parse_text(text, source=str(path), do_redact=do_redact)
+def parse_path(path: Path, do_redact: bool = True, sample: str | None = None) -> ReportRecord:
+    return parse_text(read_text(path), source=str(path), do_redact=do_redact, sample=sample)
 
 
 def main() -> int:
@@ -1049,21 +1125,25 @@ def main() -> int:
     ap.add_argument("--text", help="Parse a literal string instead of a file")
     ap.add_argument("--json", help="Write JSON to this path instead of stdout")
     ap.add_argument(
+        "--sample",
+        help="VCF only: which sample column to read genotypes from (default: the first)",
+    )
+    ap.add_argument(
         "--no-redact", action="store_true",
-        help="Keep identifiers in the emitted context (debugging synthetic reports only)",
+        help="Keep identifiers in the output (debugging synthetic reports only)",
     )
     args = ap.parse_args()
 
     do_redact = not args.no_redact
 
     if args.text:
-        record = parse_text(args.text, source=None, do_redact=do_redact)
+        record = parse_text(args.text, source=None, do_redact=do_redact, sample=args.sample)
     elif args.path:
         path = Path(args.path)
         if not path.exists():
             print(f"error: {path} not found", file=sys.stderr)
             return 1
-        record = parse_path(path, do_redact=do_redact)
+        record = parse_path(path, do_redact=do_redact, sample=args.sample)
     else:
         ap.error("provide a file path or --text")
         return 2

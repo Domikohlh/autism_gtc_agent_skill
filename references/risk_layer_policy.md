@@ -176,18 +176,6 @@ than resolving it yourself.
 
 ---
 
-## Summary card
-
-| | Tier 1 | Tier 2 | Tier 3 |
-|---|---|---|---|
-| **Test** | Published protocol with defined action | Documented elevated risk, no protocol | Neither |
-| **Action** | Include prominently | Include, framed as awareness | Exclude entirely |
-| **Specifics** | Retrieve and cite, never recall | Retrieve and cite, never recall | N/A |
-| **Percentages** | Only if retrieved this session | Only if retrieved this session | Never |
-| **Framing** | "Standard care, not prediction" | "More common, not inevitable, treatable" | — |
-
----
-
 ## Sources
 
 - [ACMG SF v3.3 list for reporting of secondary findings in clinical exome and genome sequencing. *Genetics in Medicine*, 2025](https://www.gimjournal.org/article/S1098-3600(25)00101-7/fulltext)

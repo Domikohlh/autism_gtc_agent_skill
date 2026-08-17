@@ -29,6 +29,8 @@ Input JSON shape (all keys optional except `finding_summary`):
     "management_considerations": "...",
     "secondary_findings": "...",
     "uncertainty": "...",
+    "testing_gaps": "...",
+    "further_testing": "...",
     "next_steps": "...",
     "sources": [{"text": "...", "url": "...", "retrieved": "2026-08-16"}]
   },
@@ -49,24 +51,81 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    from phi import find_identifiers
+except ImportError:  # imported as a module from outside scripts/
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from phi import find_identifiers
+
 LIMITS_BLOCK = (
     "> **What this document is and isn't.** This summarises published information "
     "about this genetic finding. It is not medical advice, not a diagnosis, and not "
     "a prediction. Every decision belongs with the clinical team — bring this to them."
 )
 
-# Patterns that suggest identifiable data leaked into the output.
-PHI_PATTERNS = [
-    (re.compile(r"\bMRN[:\s#]*\d+", re.I), "medical record number"),
-    (re.compile(r"\bDOB[:\s]*\d", re.I), "date of birth"),
-    (re.compile(r"\bNHS\s*(?:no\.?|number)[:\s]*\d", re.I), "NHS number"),
-    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "possible SSN"),
-    (re.compile(r"\baccession[:\s#]*\w{4,}", re.I), "lab accession number"),
-]
-
 
 def check_deidentified(text: str) -> list[str]:
-    return [label for pattern, label in PHI_PATTERNS if pattern.search(text)]
+    """
+    Identifier shapes still present in the assembled document.
+
+    Uses the same ruleset as the parser (phi.py). This check used to keep its own
+    shorter list, which meant a brief carrying a date of birth, a hospital
+    number, a lab email and a specimen ID passed untouched — the script writing
+    the document handed to a clinic had the weakest check in the repository.
+    """
+    return find_identifiers(text)
+
+
+# Advisory checks on the family half only. Testing showed it drifting long,
+# technical and tutorial — definitions nobody asked for, citations mid-sentence,
+# a teaching voice. These flag the drift; they never block, because a term is
+# occasionally the right call and only the writer can tell.
+CITATION_SHAPES = [
+    # Any parenthetical ending in a year: "(Cage et al., 2024)", "(Brain, 2024)",
+    # "(International PHTS Consensus, 2025)". All three are the same drift.
+    (re.compile(r"\([^)\n]{3,60},\s*(?:19|20)\d{2}\)"), "parenthetical citation"),
+    (re.compile(r"\*[^*\n]{3,60}\*,?\s*\d{4}"), "italicised journal name with a year"),
+    (re.compile(r"\b\d{4};\s*\d+\(\d+\)"), "volume/issue citation"),
+    (re.compile(r"https?://|\bdoi:", re.IGNORECASE), "URL or DOI"),
+    (re.compile(r"\b(?:PMID|GeneReviews|ClinGen|ClinVar|OMIM|ACMG)\b"), "database or body named inline"),
+]
+
+# The jargon list is the plain-language glossary — one source, so the check and
+# the translation cannot drift apart. Terms marked `keep` are excluded: a family
+# needs the name of their own test, and flagging it would be noise.
+def _load_jargon() -> list[str]:
+    path = Path(__file__).resolve().parent.parent / "assets" / "plain_language.json"
+    try:
+        terms = json.loads(path.read_text())["terms"]
+    except (OSError, ValueError, KeyError):
+        return []
+    return [t for t, e in terms.items() if not e.get("keep")]
+
+
+JARGON = _load_jargon()
+
+FAMILY_WORD_LIMIT = 800
+
+
+def check_family_register(text: str) -> list[str]:
+    """Advisory notes on plainness of the family half. Never blocks."""
+    notes = []
+    for pattern, label in CITATION_SHAPES:
+        if pattern.search(text):
+            notes.append(f"{label} in the family half — evidence belongs in the clinician section")
+    found = [term for term in JARGON if re.search(rf"\b{re.escape(term)}\b", text, re.IGNORECASE)]
+    if found:
+        notes.append(
+            "technical terms in the family half: " + ", ".join(sorted(set(found)))
+            + " — replace with what each means in practice rather than defining it"
+        )
+    words = len(text.split())
+    if words > FAMILY_WORD_LIMIT:
+        notes.append(
+            f"family half is {words} words (target under {FAMILY_WORD_LIMIT}) — a shorter "
+            "brief that gets read beats a complete one that does not"
+        )
+    return notes
 
 
 def section(title: str, body: str | None, level: int = 2) -> str:
@@ -146,6 +205,11 @@ def render_clinician(data: dict) -> str:
     out.append(section("Management considerations", clin.get("management_considerations")))
     out.append(section("Secondary findings", clin.get("secondary_findings")))
     out.append(section("Uncertainty and limitations", clin.get("uncertainty")))
+    # The testing-gap pair sits in this register deliberately: it is follow-up
+    # for whoever can act on it, and noise in the family half.
+    out.append(section("Testing performed, and what it could not detect",
+                       clin.get("testing_gaps")))
+    out.append(section("Further testing indicated", clin.get("further_testing")))
     out.append(section("Suggested next steps", clin.get("next_steps")))
 
     sources = clin.get("sources") or []
@@ -203,7 +267,10 @@ def main() -> int:
 
     parts = []
     if not args.clinician_only:
-        parts.append(render_family(data))
+        family = render_family(data)
+        parts.append(family)
+        for note in check_family_register(family):
+            print(f"register: {note}", file=sys.stderr)
     if not args.family_only:
         parts.append(render_clinician(data))
 

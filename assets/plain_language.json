@@ -1,0 +1,115 @@
+{
+  "_meta": {
+    "description": "Report vocabulary translated for a family. Each entry gives the plain rendering that carries the SAME meaning — not a simplification that loses one. Used by scripts/plain_language.py and by render_brief.py's family-register check.",
+    "curated": "2026-08-18",
+    "how_to_read": {
+      "plain": "What to write instead. Replaces the term; it is not a gloss to put beside it.",
+      "keep": "Terms the family must be able to say themselves — gene symbol, syndrome name, the test's name. Keep these and explain once.",
+      "careful": "Where a careless translation changes the meaning. Read before rewriting."
+    },
+    "the_rule": "The fix for a technical term is deletion, not definition. If a plain sentence carries the meaning, write that sentence — do not write the term and then explain it."
+  },
+
+  "terms": {
+    "de novo": {
+      "plain": "this change was not inherited from either parent — it happened for the first time in your child",
+      "careful": "Do not shorten to 'new' or 'random'. Families hear 'random' as 'nobody's fault, but also nobody knows anything', and it is neither."
+    },
+    "heterozygous": {
+      "plain": "the change is in one of the two copies of this gene",
+      "careful": "Only mention copies at all if it matters for what happens next. Often it does not, and the sentence can simply go."
+    },
+    "homozygous": { "plain": "the change is in both copies of this gene" },
+    "hemizygous": {
+      "plain": "there is only one copy of this gene, so there is no second copy to compensate",
+      "careful": "Usually X-linked. Do not go into inheritance patterns unless asked — route that to genetic counselling."
+    },
+    "mosaic": {
+      "plain": "the change is present in some of the body's cells but not all of them",
+      "careful": "Never imply that a lower percentage means a milder condition. The level in a blood sample does not predict the level elsewhere."
+    },
+    "pathogenic": {
+      "plain": "the laboratory is confident this change is the cause",
+      "careful": "Do not soften to 'may be the cause'. That is the *likely pathogenic* or VUS wording, and the difference is the whole point of the classification."
+    },
+    "likely pathogenic": {
+      "plain": "the laboratory thinks this change is very probably the cause, though not with complete certainty",
+      "careful": "Must keep the uncertainty. Rendering it as 'is the cause' promotes the finding a level."
+    },
+    "variant of uncertain significance": {
+      "plain": "the laboratory found a change but there is not yet enough evidence to say whether it is related to your child's development, or is simply part of normal human variation",
+      "careful": "The single most misread term in genetics. Not 'probably bad', not 'nothing'. Read references/vus_communication.md before writing about one."
+    },
+    "benign": { "plain": "this change is a normal variation and is not the cause" },
+    "likely benign": { "plain": "this change is very probably normal variation rather than the cause" },
+    "variant": {
+      "plain": "a change in a gene",
+      "careful": "'Mutation' is the word families expect but it carries dread. 'Change' does the same work."
+    },
+    "missense": { "plain": "one building block of the gene is altered" },
+    "nonsense": { "plain": "the gene's instructions stop early, so the protein is not finished" },
+    "frameshift": { "plain": "the gene's instructions are shifted out of step from that point on" },
+    "truncating": { "plain": "the gene's instructions are cut short" },
+    "loss-of-function": {
+      "plain": "this change stops the gene working as it should",
+      "careful": "For SCN2A, SCN8A and GRIN2A/2B the direction of effect decides treatment and cannot be read off the notation. Do not state it unless the report does."
+    },
+    "gain-of-function": {
+      "plain": "this change makes the gene overactive",
+      "careful": "Same direction-of-effect trap as above."
+    },
+    "haploinsufficiency": { "plain": "one working copy of this gene is not enough on its own" },
+    "penetrance": {
+      "plain": "not everyone with this change is affected in the same way, or at all",
+      "careful": "Do not attach a percentage unless you retrieved one this session."
+    },
+    "phenotype": { "plain": "the features someone actually has" },
+    "genotype": { "plain": "what the genetic testing found" },
+    "proband": { "plain": "the person who was tested first — here, your child" },
+    "segregation": { "plain": "testing parents to see whether they carry the same change" },
+    "cascade testing": { "plain": "offering testing to other family members" },
+    "carrier": {
+      "plain": "someone who has the change but is not affected by it themselves",
+      "careful": "Carrier status has implications for relatives. Route to genetic counselling rather than elaborating."
+    },
+    "copy number variant": { "plain": "a missing or extra piece of a chromosome" },
+    "deletion": { "plain": "a missing piece" },
+    "duplication": { "plain": "an extra copy of a piece" },
+    "microarray": {
+      "plain": "a test that looks for missing or extra pieces of chromosome",
+      "keep": true,
+      "careful": "Worth keeping the name so they can recognise it on paperwork. Say what it could not look for."
+    },
+    "exome sequencing": {
+      "plain": "a test that reads the parts of the genes where most changes are found",
+      "keep": true
+    },
+    "genome sequencing": { "plain": "a test that reads almost all of the DNA", "keep": true },
+    "gene panel": { "plain": "a test that reads a fixed list of genes chosen in advance", "keep": true },
+    "repeat expansion": { "plain": "a short piece of DNA repeated more times than usual" },
+    "methylation": { "plain": "a chemical marker that switches a gene on or off" },
+    "transcript": {
+      "plain": "the specific version of the gene the laboratory measured against",
+      "careful": "Rarely belongs in the family half at all. Usually delete the sentence."
+    },
+    "allele": { "plain": "one of the two copies of a gene" },
+    "locus": { "plain": "the place on a chromosome where a gene sits" },
+    "in silico": { "plain": "predicted by computer rather than measured in the laboratory" },
+    "splice site": { "plain": "the join between two parts of a gene's instructions" },
+    "reanalysis": { "plain": "looking again at the results they already have, using what has been learned since" },
+    "secondary finding": {
+      "plain": "something the test found that was not what it was looking for",
+      "careful": "Flag and route to genetic counselling. Do not explain the associated condition in the family half."
+    },
+    "surveillance": {
+      "plain": "regular health checks that go with this finding",
+      "careful": "Not 'screening for disease'. Frame as standard care that catches things early, not as prediction."
+    }
+  },
+
+  "always_keep": {
+    "gene symbol": "The family needs it to search, to find their community, and to say it at appointments. Keep it exactly as written and explain it once.",
+    "syndrome name": "Same reason — it is the word that finds other families.",
+    "the name of the test": "They will see it on letters and need to recognise it."
+  }
+}
