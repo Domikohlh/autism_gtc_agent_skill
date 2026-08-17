@@ -1,4 +1,4 @@
-# Autism Gene-to-Care Navigator (v3)
+# Autism Gene-to-Care Navigator
 
 An agent skill that turns a genetic test report for autism or another neurodevelopmental
 condition into two things a person can actually use: a plain-language explanation, and
@@ -23,28 +23,9 @@ Families are told about the developmental gene and hear nothing about either.
 
 ### What it is not
 
-**This is a delivery tool.** It carries published information the last mile to the person
-who needs it. It is not a diagnostic tool and not a bioinformatics tool, and the distinction
-is not modesty — it is what makes the output trustworthy. Specifically:
-
-- **It does not diagnose.** Not autism, not any condition. *Please seek professionals if
-  you have any concerns.*
-- **It does not classify variants.** Pathogenic, likely pathogenic, VUS — those come from
-  the reporting laboratory, and nothing here promotes, downgrades or reinterprets them.
-- **It computes nothing.** No predictions, no models, no scores, no pipelines. Deliberately
-  absent, not missing: an in-silico layer was scoped for v3 and cut, because a prediction
-  presented alongside a clinical brief gets read as a finding, and the tools that produce
-  those belong in a laboratory pipeline with the people who calibrate them.
-- **It does not decide access.** Whether testing is *recommended* is a published question;
-  whether a person is *eligible* belongs to their health system and clinical service.
-- **It does not replace the clinical team.** Every decision stays with them; the output
-  makes the person a better-informed participant in that decision.
-
-Everything it says should be traceable to a published source, or to the report in front of
-it. If it can be traced to neither, it should not be there.
-
-Autistic adults rank genetics research 23rd of 25 priorities and causation research dead
-last ([Cage et al., *Autism*, 2024](https://journals.sagepub.com/doi/10.1177/13623613231222656)).
+It is *not* a diagnostic classifier, and it does *not* diagnose autism. *Please seek
+professionals if you have any concerns.* Autistic adults rank genetics research 23rd of 25
+priorities and causation research dead last ([Cage et al., *Autism*, 2024](https://journals.sagepub.com/doi/10.1177/13623613231222656)).
 The care implications handled here are **co-occurring medical conditions** — cancer risk,
 epilepsy, cardiac issues — not autism itself. The skill enforces that line in its tone rules.
 
@@ -71,13 +52,6 @@ source, it names the document and stops.
 
 Mermaid source: [`docs/workflow.mmd`](docs/workflow.mmd)
 
-**Every output has two registers, and the family one is not a simplified version of the
-clinician one.** They answer different questions. Families ask *what does this mean for us,
-and what do we do*; clinicians ask *what is the evidence, and what am I obliged to act on*.
-The family half is plain and directive, carries no citations, and stays under ~800 words;
-the clinician half is technical, cited, and carries the testing-gap and further-testing
-sections. `render_brief.py` assembles both and warns when the family half drifts technical.
-
 The **scripts form the data spine**; the **reference files govern judgement**. Scripts
 move and shape data — they never make a clinical call.
 
@@ -89,10 +63,8 @@ move and shape data — they never make a clinical call.
 | 3 · Risk layer | *(agent)* | `risk_layer_policy.md` | Tier assignment |
 | 4 · VUS | *(agent)* | `vus_communication.md` | Uncertainty framing |
 | 5 · Staleness | *(agent)* | `SKILL.md` | Reanalysis prompt |
-| 5b · Reanalysis | `indication_lookup.py --report-date` | `testing_indications.md` | Elapsed years, whether there is data to reanalyse |
 | 6 · Testing gap | `indication_lookup.py` + `indication_index.json` | `testing_indications.md` | Prior-assay blind spots, what is indicated, whose authority |
 | 7 · Render | `render_brief.py` | `output_templates.md` | `brief.md`, both registers |
-| — · Translate | `plain_language.py` | `output_templates.md` | A technical document put into words a family can use. A separate entry point, not a step: the asker is technical, the audience is not |
 
 ---
 
@@ -132,20 +104,16 @@ gene-to-care-navigator/
 ├── LICENSE·LICENSE-DOCS·NOTICE # Apache 2.0 for code, CC BY 4.0 for content
 ├── assets/gene_index.json      # 27 genes + 5 CNV regions — routing only, no specifics
 ├── assets/indication_index.json # indications, authorities, prior-test blind spots
-├── assets/plain_language.json  # report vocabulary → words a family can use
 ├── references/                 # the judgement layer, as prose the agent reads:
-│                               #   gene_index · risk_layer_policy · vus_communication
-│                               #   report_parsing · output_templates
-│                               #   testing_indications · request_templates
+|
 ├── scripts/
 │   ├── phi.py                  # identifier ruleset, shared by the scripts below
 │   ├── parse_report.py         # report → findings JSON, identifiers redacted
 │   ├── gene_lookup.py          # gene / syndrome / cytoband → sources, domains, traps
-│   ├── indication_lookup.py    # features + prior tests → gaps, indications, reanalysis
-│   ├── plain_language.py       # technical text → plain renderings + translation traps
+│   ├── indication_lookup.py    # features + prior tests → gaps, indications, authorities
 │   └── render_brief.py         # findings → two-register brief
 ├── tests/                      # smoke_test.py · cases.md (rubric) · prompts.md
-│   └── fixtures/               #   43 synthetic reports, VCFs, scenarios, .txt conversions
+│   └── fixtures/               #   39 synthetic reports, VCFs, scenarios, .txt conversions
 └── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
@@ -157,11 +125,9 @@ gene-to-care-navigator/
 (`pip install -r requirements.txt`) and otherwise falls back to the `pdftotext` binary
 from poppler-utils.
 
-There is deliberately no HTTP client, LLM SDK, or bioinformatics stack. That is the
-delivery-tool stance expressed in the dependency list: the agent does retrieval through its
-own tooling, and nothing here computes a clinical answer. Code that touches health
-information is easier to audit when there is little to audit — and a repository that cannot
-run a predictor cannot accidentally present one as a finding.
+There is deliberately no HTTP client, LLM SDK, or bioinformatics stack — the agent does
+retrieval through its own tooling. Code that touches health information is easier to audit
+when there is little to audit.
 
 ---
 
@@ -246,22 +212,8 @@ what it could not have found.
 
 ```bash
 python scripts/indication_lookup.py --features "autism, developmental delay" --had microarray
-python scripts/indication_lookup.py --report-date "21 October 2019" --had exome --singleton
 python scripts/indication_lookup.py --list
 ```
-
-Where the user wants the actual wording to take to a clinician, a genetics service or a
-payer, `references/request_templates.md` carries talking points and a request draft in UK
-and US forms. Identifiers stay as placeholders even when the real values are known, and the
-review-and-send statement sits inside the drafted document rather than only in the chat —
-drafts get separated from the conversation they came from.
-
-`--report-date` adds the reanalysis assessment: elapsed years, and whether there is
-anything to reanalyse at all. That second question decides whether the request succeeds —
-a microarray leaves no sequence data, so for those the ask is new testing, not reanalysis.
-It says **nothing** about which genes have been described since; that needs a time-indexed
-discovery list this repository does not hold and must not invent, and the case-level facts
-are the argument without it.
 
 It holds **no eligibility criteria, age thresholds or yield figures** — the same
 discipline as the gene index. It records that an authority governs a picture and which
@@ -273,23 +225,6 @@ indication; and a negated feature does not count as present, so "no developmenta
 is not read as evidence of delay. Both errors ran the same way — toward telling a family
 they qualify. Where an indication matches partly on a feature not being *mentioned*, the
 output says so, because absence of a phrase is not absence of the feature.
-
-### `plain_language.py`
-
-Translates report vocabulary into words a family can use — for when a clinician, clinical
-scientist or genetic counsellor has a document and wants a version the patient can read.
-
-```bash
-python scripts/plain_language.py --text "de novo heterozygous pathogenic variant"
-python scripts/plain_language.py --list
-```
-
-It rewrites nothing, deliberately: mechanical substitution produces sentences nobody would
-write, and the terms that matter most are the ones where the whole sentence has to change.
-It surfaces the vocabulary and the traps. Longest match wins, so text saying *likely
-pathogenic* never reports as *pathogenic* — promoting a classification a level is the
-failure this prevents. The same glossary backs `render_brief.py`'s register check, so the
-check and the translation cannot drift apart.
 
 ### `render_brief.py`
 
@@ -425,7 +360,7 @@ python scripts/gene_lookup.py --list          # index integrity
 
 Testing splits into two layers, and only one can be automated.
 
-**Parser layer** — `smoke_test.py` runs 43 synthetic fixtures through `parse_report.py`
+**Parser layer** — `smoke_test.py` runs 39 synthetic fixtures through `parse_report.py`
 and asserts what came out. Expectations were recorded from verified runs rather than
 written from intent, so a failure means behaviour changed — read the diff before editing
 the expectation. It also cross-checks every planted identifier against *every* fixture's
@@ -466,10 +401,6 @@ step** — see [Data privacy](#data-privacy-and-confidentiality) first.
 - **Feature matching is string-based.** It requires two independent features before
   claiming the with-developmental-delay indication and ignores negated mentions, but it
   reads text, not meaning — check what it matched on, which it prints.
-- **Nothing here computes a clinical answer.** No variant classification, no prediction, no
-  score. Where a question needs one — does this variant disrupt splicing, would RNA testing
-  resolve it — the answer belongs to a laboratory pipeline and the people who calibrate it,
-  not to this tool.
 
 ---
 
@@ -498,23 +429,8 @@ step** — see [Data privacy](#data-privacy-and-confidentiality) first.
   what further testing is guideline-indicated and by whose authority, and the wording to
   bring to a clinician or payer. Delivered as sections of the clinician register rather
   than as a separate skill. Targets the 11.3% directly.
-- **v3** *(current)* — three additions, each narrowed to what can be done honestly:
-  - **Reanalysis advocate** — built from case-level facts (report date, assay, coverage,
-    singleton versus trio) and a request to the clinical service. It names **no** newly
-    described genes: that needs a time-indexed discovery list which would go stale
-    silently, and the argument does not depend on one.
-  - **Plain-language translation** — a technical document into words a family can use,
-    with meaning preserved rather than simplified away. A classification is never promoted;
-    a caveat is rephrased, never dropped.
-- **v4** — Wrap up, Cost optimisation, latency reduction, Overlap review, README.md final update.
-
-  Measured for the latency work: the per-invocation floor is SKILL.md plus the reference
-  files the workflow marks "Always". The largest single saving found is `gene_index.md` —
-  around 2,900 tokens loaded every run to describe 27 genes, where `gene_lookup.py` returns
-  the routing for the one that matters in about 420. Demoting it and `testing_indications.md`
-  to conditional would cut the floor roughly 40% without weakening a safety rule. Deferred
-  deliberately: latency varies too much between scenarios to tune blind, and safety margin
-  comes first. 
+- **v3** — (i) Reanalysis advocate — case-level facts only (date, assay, coverage, singleton vs trio), with the assay-level judgement of whether there's anything to reanalyse at all. Names no newly described genes.(ii)Plain-language translation — technical document to family-readable, meaning preserved. Classifications never promoted, caveats rephrased never dropped, shared glossary with the register check.
+- **v4** *(current)* — Wrap up, Cost optimisation, latency reduction, Overlap review, README.md final update. 
 
 ---
 
