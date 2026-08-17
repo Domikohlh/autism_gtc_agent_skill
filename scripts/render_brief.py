@@ -29,6 +29,8 @@ Input JSON shape (all keys optional except `finding_summary`):
     "management_considerations": "...",
     "secondary_findings": "...",
     "uncertainty": "...",
+    "testing_gaps": "...",
+    "further_testing": "...",
     "next_steps": "...",
     "sources": [{"text": "...", "url": "...", "retrieved": "2026-08-16"}]
   },
@@ -199,6 +201,11 @@ def render_clinician(data: dict) -> str:
     out.append(section("Management considerations", clin.get("management_considerations")))
     out.append(section("Secondary findings", clin.get("secondary_findings")))
     out.append(section("Uncertainty and limitations", clin.get("uncertainty")))
+    # The testing-gap pair sits in this register deliberately: it is follow-up
+    # for whoever can act on it, and noise in the family half.
+    out.append(section("Testing performed, and what it could not detect",
+                       clin.get("testing_gaps")))
+    out.append(section("Further testing indicated", clin.get("further_testing")))
     out.append(section("Suggested next steps", clin.get("next_steps")))
 
     sources = clin.get("sources") or []

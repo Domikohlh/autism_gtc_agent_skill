@@ -141,9 +141,26 @@ implication, route to genetic counselling. Do not counsel here.]
 [Explicitly: what this result does not establish. Any VUS and why it is not actionable.
 Where direction of effect is unknown and why that matters clinically.]
 
+## Testing performed, and what it could not detect
+[The assay's blind spots, from `indication_lookup.py --had`. Mechanical and near-certain:
+a microarray cannot see sequence variants; a panel cannot see genes described after its
+version date — state the version or say it must be obtained; an exome sees most repeat
+expansions poorly; FMR1 repeat sizing is a separate assay. State the gap; do not inflate
+it into a diagnosis-in-waiting.]
+
+## Further testing indicated
+[What is recommended for this clinical picture, and by which named authority, quoted with
+a retrieval date. Distinguish explicitly:
+  · clinical recommendation — published, and it travels;
+  · eligibility — a policy question for the health system and clinical service.
+Never assert eligibility. Where the report is non-diagnostic and older than roughly two
+years, reanalysis of existing data and new testing are different requests — say which is
+being described. See `references/testing_indications.md`.]
+
 ## Suggested next steps
 [Parental/segregation testing. Reanalysis timing if the report is stale. Referrals.
-RNA or functional testing if it would resolve a specific question — name the question.]
+RNA or functional testing if it would resolve a specific question — name the question.
+Who holds each action.]
 
 ## Sources
 [Every clinical assertion above, with retrieval date.]
@@ -157,6 +174,13 @@ RNA or functional testing if it would resolve a specific question — name the q
 - State evidence strength explicitly. "Consensus guideline" and "single case series" are
   different things and the distinction changes what a clinician does.
 - Retrieval dates on everything. Guidelines move.
+- **The testing-gap sections are for this register, not the family one.** A clinician,
+  clinical scientist or bioinformatician picks up the follow-up here: what was not
+  covered, what is indicated, whose authority says so, what to request. The family half
+  gets at most one plain directive line — "the 2019 test could not look at individual
+  genes; ask the genetics team whether sequencing is available now" — and never the
+  citations. Splitting it this way is the point: the detail is useful to the person who
+  can act on it and is noise to the person who cannot.
 
 ---
 

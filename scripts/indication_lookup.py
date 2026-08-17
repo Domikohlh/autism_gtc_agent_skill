@@ -20,10 +20,28 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 INDEX_PATH = Path(__file__).resolve().parent.parent / "assets" / "indication_index.json"
+
+# "no developmental delay" contains "developmental delay". A plain substring test
+# reads a parent ruling a feature OUT as evidence that it is present, and routes
+# the contested no-delay picture into the indication that looks clearly eligible.
+NEGATOR = re.compile(
+    r"(?:\bno\b|\bnot\b|\bwithout\b|\bdenie[sd]\b|\babsent\b|\bnegative for\b"
+    r"|\bfree of\b|\bruled out\b|\bnever\b)[\s\w]{0,12}$",
+    re.IGNORECASE,
+)
+
+
+def mentions(term: str, text: str) -> bool:
+    """Whether `term` appears in `text` other than under a negation."""
+    for m in re.finditer(re.escape(term.lower()), text):
+        if not NEGATOR.search(text[max(0, m.start() - 25):m.start()]):
+            return True
+    return False
 
 NO_MATCH_GUIDANCE = """\
 No curated indication matched those features. That does not mean testing is not
@@ -45,20 +63,45 @@ def load_index() -> dict:
     return json.loads(INDEX_PATH.read_text())
 
 
-def match_indications(index: dict, features: str) -> list[tuple[str, dict, list[str]]]:
+def match_indications(index: dict, features: str) -> list[tuple[str, dict, list[str], bool]]:
     """
-    Match free-text clinical features against curated triggers.
+    Match free-text clinical features against curated trigger groups.
 
-    Returns (key, entry, which triggers matched) so the caller can show its
-    working — a match the user can see is a match they can correct.
+    Every group must contribute at least one hit. A single flat trigger list let
+    the word "autism" alone match the *with developmental delay* indication —
+    routing a picture that may not qualify straight into "testing is indicated",
+    which is the overpromise this skill exists to avoid.
+
+    `absent_triggers` excludes an indication when a contradicting feature is
+    present. An indication matched partly on absence is returned with a flag,
+    because absence of a phrase is not evidence that the feature is absent.
+
+    Returns (key, entry, which triggers matched, matched_via_absence).
     """
     text = features.lower()
     hits = []
     for key, entry in index["indications"].items():
-        matched = [t for t in entry.get("triggers", []) if t.lower() in text]
-        if matched:
-            hits.append((key, entry, matched))
-    # Most specific first: more trigger hits means a better-evidenced match.
+        groups = entry.get("trigger_groups") or []
+        if not groups:
+            continue
+
+        matched: list[str] = []
+        for group in groups:
+            group_hits = [t for t in group if mentions(t, text)]
+            if not group_hits:
+                matched = []
+                break
+            matched.extend(group_hits)
+        if not matched:
+            continue
+
+        absent = entry.get("absent_triggers") or []
+        if any(mentions(t, text) for t in absent):
+            continue
+
+        hits.append((key, entry, matched, bool(absent)))
+
+    # More trigger hits means a better-evidenced match; show those first.
     hits.sort(key=lambda h: -len(h[2]))
     return hits
 
@@ -79,10 +122,17 @@ def render_authority(index: dict, key: str) -> list[str]:
     return lines
 
 
-def render_indication(index: dict, key: str, entry: dict, matched: list[str]) -> str:
+def render_indication(index: dict, key: str, entry: dict, matched: list[str],
+                      via_absence: bool = False) -> str:
     out = [f"## {entry['label']}"]
     if matched:
-        out.append(f"_(matched on: {', '.join(matched)})_")
+        out.append(f"_(matched on: {', '.join(sorted(set(matched)))})_")
+    if via_absence:
+        out.append("")
+        out.append("  ! MATCHED PARTLY ON ABSENCE. Nothing in what you were told mentioned")
+        out.append("    developmental delay or intellectual disability — but not being")
+        out.append("    mentioned is not the same as not being present. Ask before relying")
+        out.append("    on this: it decides which indication applies, and they differ.")
     out.append("")
 
     tests = entry.get("commonly_indicated") or []
@@ -167,16 +217,17 @@ def main() -> int:
 
     if args.json:
         print(json.dumps({
-            "indications": {k: v for k, v, _ in hits},
-            "matched_triggers": {k: m for k, _, m in hits},
+            "indications": {k: v for k, v, _, _ in hits},
+            "matched_triggers": {k: sorted(set(m)) for k, _, m, _ in hits},
+            "matched_via_absence": [k for k, _, _, a in hits if a],
             "test_gaps": {k: index["test_gaps"][k] for k in args.had if k in index["test_gaps"]},
         }, indent=2))
         return 0
 
     if args.features:
         if hits:
-            for key, entry, matched in hits:
-                print(render_indication(index, key, entry, matched))
+            for key, entry, matched, via_absence in hits:
+                print(render_indication(index, key, entry, matched, via_absence))
         else:
             print(f"No curated indication matched: {args.features}\n")
             print(NO_MATCH_GUIDANCE)

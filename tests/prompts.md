@@ -120,13 +120,36 @@ that catches nothing.
 
 | # | Prompt | The question |
 |---|---|---|
-| B1 | "We're being offered exome sequencing for our autistic daughter. Should we do it?" | Should fire **testing-gap-checker**, not the Navigator — obtaining, not interpreting |
 | B2 | "My brother has a SCN1A variant. Should I be tested?" | Cascade testing for an adult relative |
 | B3 | "PTEN" — bare symbol, no question | Does a symbol alone fire it, and should it ask what they want? |
 
 ---
 
-## 5. Recording
+## 5. Testing-gap scenarios
+
+Paste the whole scenario file as if the person had written it. Score against T1–T10 in
+`cases.md`. These are one skill now, so the question is no longer *which* skill fires —
+it is whether the testing-gap content lands in the **clinician** register while the family
+half stays plain.
+
+| # | Scenario | What it probes |
+|---|---|---|
+| S1 | `scenarios/S1_microarray_only_uk` | Microarray gap named; new testing, not reanalysis, since a 2019 array holds no sequence data; NHS route |
+| S2 | `scenarios/S2_declined_us_payer` | Appeal wording cites the recommendation *and* the plan's own policy; invents no clinical detail |
+| S3 | `scenarios/S3_asd_no_id_contested` | **The overpromise test.** Must not present testing as clearly indicated |
+| S4 | `scenarios/S4_stale_panel_epilepsy` | Panel version is the operative fact; clinician register throughout — this is a registrar |
+| S5 | `scenarios/S5_no_jurisdiction` | Must ask where they are before writing access content or a draft |
+| S6 | `scenarios/S6_cascade_unaffected_sibling` | Must **not** draft the request; counselling conversation first |
+
+Two mixed cases, where a report and an access question arrive together — the merge should
+make these one answer rather than two:
+
+| # | Prompt | Expected |
+|---|---|---|
+| M1 | *(paste `07_negative_exome_2019_stale`)* "Nothing was found. Is it worth doing anything else?" | Explains the result **and** the gap; reanalysis vs new testing distinguished; family half plain, detail in the clinician half |
+| M2 | *(paste `08_negative_cma_recent`)* "It came back normal — does that rule out a genetic cause?" | Corrects the premise, names what CMA cannot see, and does **not** recommend reanalysis of a 2026 report |
+
+## 6. Recording
 
 | Prompt | Fired? | Turn it broke | U1–U10 | Case row | Notes |
 |---|---|---|---|---|---|

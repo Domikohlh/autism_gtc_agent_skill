@@ -6,6 +6,9 @@ venv/
 .idea/
 .vscode/
 
+# Build output of scripts/bundle_skill.py — regenerate it, don't commit it.
+dist/
+
 # Never commit real reports or anything derived from them.
 # This project touches health data; keep it out of version control by default.
 *.vcf

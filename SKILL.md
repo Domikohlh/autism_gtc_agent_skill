@@ -1,6 +1,6 @@
 ---
 name: gene-to-care-navigator
-description: Translates a genetic test report for autism or another neurodevelopmental condition into plain-language explanation plus the published, actionable care implications of the gene found — surveillance protocols, medication considerations, patient organisations, and registries. Use whenever someone shares or describes a genetics report, microarray, exome, genome, or gene panel result, or names a specific gene or chromosomal finding (PTEN, SCN2A, MECP2, TSC1/2, SHANK3, SYNGAP1, 16p11.2, 22q11.2, FMR1 and similar) in a neurodevelopmental context; asks what a variant or result means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a genetic finding carries risk of cancer, epilepsy, heart problems or other future conditions. Also use for negative or non-diagnostic reports, where the answer is what to do next. Trigger even without the word "genetics" — a pasted variant string or a gene symbol with a clinical question both count.
+description: Translates a genetic test report for autism or another neurodevelopmental condition into plain-language explanation plus the published, actionable care implications of the gene found — surveillance protocols, medication considerations, patient organisations, and registries. Use whenever someone shares or describes a genetics report, microarray, exome, genome, or gene panel result, or names a specific gene or chromosomal finding (PTEN, SCN2A, MECP2, TSC1/2, SHANK3, SYNGAP1, 16p11.2, 22q11.2, FMR1 and similar) in a neurodevelopmental context; asks what a variant or result means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a genetic finding carries risk of cancer, epilepsy, heart problems or other future conditions. Also use for negative or non-diagnostic reports, where the answer is what to do next — including what the testing already done could not have found, what further testing is guideline-indicated, and the wording to take to a clinician, a genetics service or a payer. Trigger even without the word "genetics" — a pasted variant string or a gene symbol with a clinical question both count.
 ---
 
 # Gene-to-Care Navigator
@@ -155,21 +155,40 @@ carries real yield. Nobody proactively recalls these families; the system has no
 mechanism. Telling them "it has been four years, it is reasonable to ask for reanalysis"
 is often the single most valuable line in the output.
 
-For non-diagnostic reports generally, also consider whether the testing performed was
-what current guidance recommends — a 2019 microarray is not an exome, and the family may
-never have been offered the latter.
-
 **A negative or non-diagnostic report belongs here, in full.** Explain what it does and
 does not establish, what the assay could not have found, and what the reasonable next
 steps are. That is delivery of published guidance, which is what this skill does.
 
-Hand over to the Testing Gap Checker (`testing-gap-checker/SKILL.md`) only at the point
-where the question becomes **how to actually obtain the next test** — wording a referral
-or funding request, or responding to a refusal. That needs the indication index and
-current eligibility criteria, which this skill does not carry. The boundary is obtaining,
-not interpreting.
+### Step 6 — Work out the testing gap
 
-### Step 6 — Write both registers
+Every report was produced by an assay with known blind spots, and what that assay could
+**not** have found is answerable with near-certainty from the assay alone. It is also the
+thing least often said out loud. A normal microarray cannot see sequence variants at all;
+a panel cannot see genes described after its version date; FMR1 repeat sizing is a
+separate assay that is routinely omitted.
+
+```bash
+python scripts/indication_lookup.py --features "autism, developmental delay" --had microarray
+```
+
+Read `references/testing_indications.md` before writing any of this. It defines the
+distinction the whole step depends on: whether testing is **recommended** for this picture
+is a clinical question with a published answer, while whether **this person is eligible**
+is a policy question decided by their health system and their clinical service. Report the
+first; route the second. Never write "you qualify" or "this will be approved".
+
+**This content is primarily for the clinician register.** It is where a clinician,
+clinical scientist or bioinformatician picks up the follow-up: what was not covered, what
+is indicated, which authority says so, and what to request next. The family half gets at
+most a plain directive line or two — "the 2019 test could not look at individual genes;
+ask the genetics team whether sequencing is available now" — and never the citations.
+
+If the user asks for the wording to take to a clinician, a genetics service or a payer,
+`references/request_templates.md` has the talking points and the request draft, in UK and
+US forms. Anything drafted is for a human to check and send, never presented as ready to
+go unread.
+
+### Step 7 — Write both registers
 
 Produce **two versions** of the output, using the templates in
 `references/output_templates.md`:
@@ -233,6 +252,15 @@ Some specifics that matter:
    identifying in itself. The obligation is yours, not the regex's.
 8. **Do not give a family a risk number you cannot source.** A remembered percentage is
    worse than no percentage.
+9. **No eligibility determination.** Whether testing is *recommended* is a clinical
+   question with a published answer; whether *this person is eligible* is a policy
+   question for their health system and clinical service. Never write "you qualify",
+   "this will be approved", or state eligibility criteria from memory. Overstating access
+   sets a family up for a refusal they were told would not come — see
+   `references/testing_indications.md`.
+10. **Never invent a clinical feature to strengthen a request.** Only features the user
+    actually reported go into a drafted referral or funding request, and any draft is for
+    a human to check and send.
 
 ## Reference files
 
@@ -244,7 +272,9 @@ Read these as needed — they are not all required for every case:
 | `references/risk_layer_policy.md` | Always, before writing anything about future risk |
 | `references/vus_communication.md` | Any report containing a VUS |
 | `references/report_parsing.md` | Report format is unfamiliar or fields are unclear |
-| `references/output_templates.md` | At Step 6, when writing the output |
+| `references/testing_indications.md` | Always, at Step 6 — before writing anything about further testing or access |
+| `references/request_templates.md` | The user wants wording for a clinician, genetics service or payer |
+| `references/output_templates.md` | At Step 7, when writing the output |
 
 ## Scripts
 
@@ -252,6 +282,7 @@ Read these as needed — they are not all required for every case:
 |---|---|
 | `scripts/parse_report.py` | Extract structured variant / CNV / repeat-expansion records from a report (PDF, text, VCF); redacts identifiers by default |
 | `scripts/gene_lookup.py` | Query the curated index by gene symbol, syndrome name, alias, or cytoband; returns syndrome, sources, care domains, traps |
+| `scripts/indication_lookup.py` | Clinical features + prior tests → what further testing is indicated, which authority governs it, and what the prior assay could not have found |
 | `scripts/render_brief.py` | Assemble the two-register output document; refuses to write a file containing identifiers |
 
 Run `python scripts/<name>.py --help` for usage.

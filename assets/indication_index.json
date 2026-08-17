@@ -5,10 +5,11 @@
     "how_to_read": {
       "url": "Present when the exact location is known and stable. Fetch it.",
       "find_by": "Present when the document is named precisely but the URL is not recorded. Search for the named document rather than guessing a link.",
-      "establishes": "What the authority is being cited FOR. Never cite it for more than this."
+      "establishes": "What the authority is being cited FOR. Never cite it for more than this.",
+      "trigger_groups": "Every group must have at least one hit for the indication to match. Two groups means two independent features must both be present — 'autism' alone must not match the with-developmental-delay indication.",
+      "absent_triggers": "If any of these appear, the indication does NOT match. Absence of a phrase is not evidence that the feature is absent, so an indication matched this way is reported with that caveat rather than asserted."
     }
   },
-
   "authorities": {
     "ACMG_2021": {
       "name": "Exome and genome sequencing for pediatric patients with congenital anomalies or intellectual disability: an evidence-based clinical guideline of the American College of Medical Genetics and Genomics (Manickam et al.)",
@@ -42,13 +43,38 @@
       "find_by": "Search ACMG technical standards FMR1 fragile X testing for the current version"
     }
   },
-
   "indications": {
     "asd_with_dd_or_id": {
       "label": "Autism spectrum diagnosis with developmental delay or intellectual disability",
-      "triggers": ["autism", "autistic", "ASD", "developmental delay", "global developmental delay", "intellectual disability", "learning disability"],
-      "commonly_indicated": ["exome or genome sequencing", "chromosomal microarray", "FMR1 repeat testing"],
-      "authorities": ["ACMG_2021", "NHS_NGTD", "ACMG_FRAGILE_X"],
+      "trigger_groups": [
+        [
+          "autism",
+          "autistic",
+          "asd"
+        ],
+        [
+          "developmental delay",
+          "global developmental delay",
+          "gdd",
+          "intellectual disability",
+          "learning disability",
+          "learning delay",
+          "learning difficult",
+          "developmental disorder",
+          "regression",
+          "skill loss"
+        ]
+      ],
+      "commonly_indicated": [
+        "exome or genome sequencing",
+        "chromosomal microarray",
+        "FMR1 repeat testing"
+      ],
+      "authorities": [
+        "ACMG_2021",
+        "NHS_NGTD",
+        "ACMG_FRAGILE_X"
+      ],
       "notes": [
         "This is the core case the skill exists for. Around 11.3% of people evaluated receive guideline-concordant testing (Arcebido et al., Autism, 2025), and the barriers found were insurance status and race rather than clinical need."
       ],
@@ -59,9 +85,30 @@
     },
     "asd_without_dd_or_id": {
       "label": "Autism spectrum diagnosis without developmental delay or intellectual disability",
-      "triggers": ["autism without intellectual disability", "no developmental delay"],
+      "trigger_groups": [
+        [
+          "autism",
+          "autistic",
+          "asd"
+        ]
+      ],
+      "absent_triggers": [
+        "developmental delay",
+        "global developmental delay",
+        "gdd",
+        "intellectual disability",
+        "learning disability",
+        "learning delay",
+        "learning difficult",
+        "developmental disorder",
+        "regression",
+        "skill loss"
+      ],
       "commonly_indicated": [],
-      "authorities": ["NHS_NGTD", "ACMG_2021"],
+      "authorities": [
+        "NHS_NGTD",
+        "ACMG_2021"
+      ],
       "notes": [
         "Genuinely more contested than the case above, and eligibility differs between systems. Retrieve the current criteria rather than assuming; say plainly that this one depends on the system and on other features."
       ],
@@ -71,17 +118,62 @@
     },
     "dysmorphism_or_congenital_anomaly": {
       "label": "Dysmorphic features, congenital anomalies, or organ malformation",
-      "triggers": ["dysmorphic", "congenital anomaly", "malformation", "congenital heart", "cleft"],
-      "commonly_indicated": ["exome or genome sequencing", "chromosomal microarray"],
-      "authorities": ["ACMG_2021", "NHS_NGTD"],
-      "notes": ["One of the strongest indications, and named explicitly in ACMG 2021."],
+      "trigger_groups": [
+        [
+          "dysmorphic",
+          "dysmorphism",
+          "congenital anomaly",
+          "malformation",
+          "congenital heart",
+          "heart murmur",
+          "cleft",
+          "low-set ears",
+          "micrognathia"
+        ]
+      ],
+      "commonly_indicated": [
+        "exome or genome sequencing",
+        "chromosomal microarray"
+      ],
+      "authorities": [
+        "ACMG_2021",
+        "NHS_NGTD"
+      ],
+      "notes": [
+        "One of the strongest indications, and named explicitly in ACMG 2021."
+      ],
       "traps": []
     },
     "epilepsy_with_ndd": {
       "label": "Epilepsy alongside developmental delay or regression",
-      "triggers": ["epilepsy", "seizures", "infantile spasms", "regression"],
-      "commonly_indicated": ["exome or genome sequencing", "epilepsy gene panel"],
-      "authorities": ["ACMG_2021", "NHS_NGTD"],
+      "trigger_groups": [
+        [
+          "epilepsy",
+          "seizure",
+          "infantile spasm",
+          "epileptic"
+        ],
+        [
+          "developmental delay",
+          "global developmental delay",
+          "gdd",
+          "intellectual disability",
+          "learning disability",
+          "learning delay",
+          "learning difficult",
+          "developmental disorder",
+          "regression",
+          "skill loss"
+        ]
+      ],
+      "commonly_indicated": [
+        "exome or genome sequencing",
+        "epilepsy gene panel"
+      ],
+      "authorities": [
+        "ACMG_2021",
+        "NHS_NGTD"
+      ],
       "notes": [
         "Often the indication with the most immediate management consequence, because a result can change antiseizure medication choice."
       ],
@@ -91,9 +183,26 @@
     },
     "family_history": {
       "label": "Family history of a neurodevelopmental condition or a known familial variant",
-      "triggers": ["family history", "sibling", "cousin", "known familial variant", "cascade"],
-      "commonly_indicated": ["targeted testing for the known familial variant", "exome or genome sequencing"],
-      "authorities": ["NHS_NGTD"],
+      "trigger_groups": [
+        [
+          "family history",
+          "known familial variant",
+          "cascade",
+          "sibling",
+          "brother",
+          "sister",
+          "cousin",
+          "same thing",
+          "tested for the same"
+        ]
+      ],
+      "commonly_indicated": [
+        "targeted testing for the known familial variant",
+        "exome or genome sequencing"
+      ],
+      "authorities": [
+        "NHS_NGTD"
+      ],
       "notes": [
         "Where a specific familial variant is known, targeted testing for that variant is a different and usually simpler request than broad sequencing."
       ],
@@ -103,9 +212,27 @@
     },
     "prior_nondiagnostic_reanalysis": {
       "label": "Previous non-diagnostic testing, now potentially due for reanalysis",
-      "triggers": ["negative result", "non-diagnostic", "nothing found", "normal result", "reanalysis"],
-      "commonly_indicated": ["reanalysis of existing sequencing data", "broader testing than was originally performed"],
-      "authorities": ["ACMG_2021", "NHS_NGTD"],
+      "trigger_groups": [
+        [
+          "negative result",
+          "non-diagnostic",
+          "nondiagnostic",
+          "nothing found",
+          "normal result",
+          "was normal",
+          "came back normal",
+          "reanalysis",
+          "reanalyse"
+        ]
+      ],
+      "commonly_indicated": [
+        "reanalysis of existing sequencing data",
+        "broader testing than was originally performed"
+      ],
+      "authorities": [
+        "ACMG_2021",
+        "NHS_NGTD"
+      ],
       "notes": [
         "Nobody proactively recalls these families; no system has that mechanism. Gene discovery has moved substantially since 2021-22, so a non-diagnostic result more than roughly two years old is worth actively asking about."
       ],
@@ -115,48 +242,96 @@
       ]
     }
   },
-
   "test_gaps": {
     "karyotype": {
       "label": "Karyotype",
-      "detects": ["large chromosomal rearrangements", "aneuploidy"],
-      "cannot_detect": ["sequence variants", "most copy number variants below microscopic resolution", "repeat expansions", "methylation abnormalities"],
+      "detects": [
+        "large chromosomal rearrangements",
+        "aneuploidy"
+      ],
+      "cannot_detect": [
+        "sequence variants",
+        "most copy number variants below microscopic resolution",
+        "repeat expansions",
+        "methylation abnormalities"
+      ],
       "note": "Misses almost everything relevant to a neurodevelopmental indication."
     },
     "fish": {
       "label": "FISH",
-      "detects": ["the specific region it was targeted at"],
-      "cannot_detect": ["anything not specifically asked for"],
+      "detects": [
+        "the specific region it was targeted at"
+      ],
+      "cannot_detect": [
+        "anything not specifically asked for"
+      ],
       "note": "Targeted by design. A normal FISH says nothing about the rest of the genome."
     },
     "microarray": {
       "label": "Chromosomal microarray (CMA)",
-      "detects": ["copy number variants above the platform's resolution", "some regions of homozygosity"],
-      "cannot_detect": ["sequence variants", "balanced rearrangements", "repeat expansions", "methylation abnormalities", "low-level mosaicism"],
+      "detects": [
+        "copy number variants above the platform's resolution",
+        "some regions of homozygosity"
+      ],
+      "cannot_detect": [
+        "sequence variants",
+        "balanced rearrangements",
+        "repeat expansions",
+        "methylation abnormalities",
+        "low-level mosaicism"
+      ],
       "note": "A normal microarray is not a completed genetic workup. This is the single most common gap in an autism or ID pathway."
     },
     "panel": {
       "label": "Targeted gene panel",
-      "detects": ["variants in the genes on the panel, as of the panel's version date"],
-      "cannot_detect": ["anything off the panel", "genes described after the panel version", "most repeat expansions", "copy number depending on the pipeline"],
+      "detects": [
+        "variants in the genes on the panel, as of the panel's version date"
+      ],
+      "cannot_detect": [
+        "anything off the panel",
+        "genes described after the panel version",
+        "most repeat expansions",
+        "copy number depending on the pipeline"
+      ],
       "note": "Ask which panel and which version. Panels age badly, and the version date is the operative fact."
     },
     "exome": {
       "label": "Exome sequencing (ES)",
-      "detects": ["coding sequence variants", "some copy number variants depending on the pipeline"],
-      "cannot_detect": ["most repeat expansions", "deep intronic variants", "methylation abnormalities", "balanced rearrangements", "poorly covered regions"],
+      "detects": [
+        "coding sequence variants",
+        "some copy number variants depending on the pipeline"
+      ],
+      "cannot_detect": [
+        "most repeat expansions",
+        "deep intronic variants",
+        "methylation abnormalities",
+        "balanced rearrangements",
+        "poorly covered regions"
+      ],
       "note": "Singleton exome without parental samples materially limits interpretation. Whether it was a trio matters."
     },
     "genome": {
       "label": "Genome sequencing (GS)",
-      "detects": ["coding and non-coding sequence variants", "copy number variants", "some structural variation"],
-      "cannot_detect": ["many repeat expansions on short reads", "methylation abnormalities without a separate assay", "some complex structural variation"],
+      "detects": [
+        "coding and non-coding sequence variants",
+        "copy number variants",
+        "some structural variation"
+      ],
+      "cannot_detect": [
+        "many repeat expansions on short reads",
+        "methylation abnormalities without a separate assay",
+        "some complex structural variation"
+      ],
       "note": "Broadest short-read test, still not exhaustive."
     },
     "fmr1_repeat": {
       "label": "FMR1 repeat sizing",
-      "detects": ["FMR1 CGG repeat expansion and its methylation status"],
-      "cannot_detect": ["anything other than FMR1"],
+      "detects": [
+        "FMR1 CGG repeat expansion and its methylation status"
+      ],
+      "cannot_detect": [
+        "anything other than FMR1"
+      ],
       "note": "A separate assay. Its absence from a workup is a gap in its own right, not a detail."
     }
   }

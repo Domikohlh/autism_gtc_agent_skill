@@ -63,7 +63,8 @@ move and shape data — they never make a clinical call.
 | 3 · Risk layer | *(agent)* | `risk_layer_policy.md` | Tier assignment |
 | 4 · VUS | *(agent)* | `vus_communication.md` | Uncertainty framing |
 | 5 · Staleness | *(agent)* | `SKILL.md` | Reanalysis prompt |
-| 6 · Render | `render_brief.py` | `output_templates.md` | `brief.md`, both registers |
+| 6 · Testing gap | `indication_lookup.py` + `indication_index.json` | `testing_indications.md` | Prior-assay blind spots, what is indicated, whose authority |
+| 7 · Render | `render_brief.py` | `output_templates.md` | `brief.md`, both registers |
 
 ---
 
@@ -102,17 +103,19 @@ gene-to-care-navigator/
 ├── SKILL.md                    # trigger description, workflow, guardrails, tone
 ├── LICENSE·LICENSE-DOCS·NOTICE # Apache 2.0 for code, CC BY 4.0 for content
 ├── assets/gene_index.json      # 27 genes + 5 CNV regions — routing only, no specifics
+├── assets/indication_index.json # indications, authorities, prior-test blind spots
 ├── references/                 # the judgement layer, as prose the agent reads:
 │                               #   gene_index · risk_layer_policy · vus_communication
 │                               #   report_parsing · output_templates
+│                               #   testing_indications · request_templates
 ├── scripts/
-│   ├── phi.py                  # identifier ruleset, shared by the two below
+│   ├── phi.py                  # identifier ruleset, shared by the scripts below
 │   ├── parse_report.py         # report → findings JSON, identifiers redacted
 │   ├── gene_lookup.py          # gene / syndrome / cytoband → sources, domains, traps
+│   ├── indication_lookup.py    # features + prior tests → gaps, indications, authorities
 │   └── render_brief.py         # findings → two-register brief
 ├── tests/                      # smoke_test.py · cases.md (rubric) · prompts.md
-│   └── fixtures/               #   28 synthetic reports and VCFs — no real data
-├── testing-gap-checker/        # v2 skill: obtaining testing, not interpreting results
+│   └── fixtures/               #   34 synthetic reports, VCFs and scenarios — no real data
 └── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
@@ -186,6 +189,27 @@ organisations. For an uncurated gene it returns a search order rather than nothi
 rarely get. Lookups accept whichever word the person was given, since a family arrives
 with "Rett" at least as often as with MECP2. CNV entries print band and copy number in
 full, because deletion and duplication of one band can have partly opposite phenotypes.
+
+### `indication_lookup.py`
+
+Routes a clinical picture to what further testing is indicated, and a test already done to
+what it could not have found.
+
+```bash
+python scripts/indication_lookup.py --features "autism, developmental delay" --had microarray
+python scripts/indication_lookup.py --list
+```
+
+It holds **no eligibility criteria, age thresholds or yield figures** — the same
+discipline as the gene index. It records that an authority governs a picture and which
+document it is; the criteria are retrieved and cited.
+
+Matching is deliberately strict in both directions. An indication with two trigger groups
+needs a hit in each, so "autism" alone cannot reach the *with developmental delay*
+indication; and a negated feature does not count as present, so "no developmental delay"
+is not read as evidence of delay. Both errors ran the same way — toward telling a family
+they qualify. Where an indication matches partly on a feature not being *mentioned*, the
+output says so, because absence of a phrase is not absence of the feature.
 
 ### `render_brief.py`
 
@@ -364,9 +388,11 @@ step** — see [Data privacy](#data-privacy-and-confidentiality) first.
 
 ## Roadmap
 
-- **v1** *(current)* — report translation + gene-to-care + risk layer
-- **v2** — Testing Gap Checker: what testing is guideline-indicated given a clinical
-  picture, and the wording to bring to a clinician or insurer. Targets the 11.3% directly.
+- **v1** — report translation + gene-to-care + risk layer
+- **v2** *(current)* — Testing gap: what the testing already done could not have found,
+  what further testing is guideline-indicated and by whose authority, and the wording to
+  bring to a clinician or payer. Delivered as sections of the clinician register rather
+  than as a separate skill. Targets the 11.3% directly.
 - **v3** — Reanalysis Advocate: which NDD genes were described since the report date, and
   a drafted request to the clinical service.
 - **v4** — functional triage underneath: local SpliceAI/Pangolin, tissue-expression check

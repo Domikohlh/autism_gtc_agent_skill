@@ -20,9 +20,13 @@ flowchart TD
   R4["references/<br/>vus_communication.md"] -. governs .-> VUS
   VUS --> STALE
   STALE{"report older than ~2y<br/>and non-diagnostic?"}
-  STALE -- yes --> RE["add reanalysis prompt<br/>+ testing-gap note"]
-  STALE -- no --> P3
-  RE --> P3
+  STALE -- yes --> RE["add reanalysis prompt"]
+  STALE -- no --> GAP
+  RE --> GAP
+  GAP["scripts/indication_lookup.py<br/>prior-assay blind spots · what is indicated<br/>whose authority — never eligibility"]
+  D2[("assets/indication_index.json<br/>no criteria · no thresholds")] --> GAP
+  R6["references/<br/>testing_indications.md"] -. governs .-> GAP
+  GAP --> P3
   P3["scripts/render_brief.py<br/>two registers · PHI check blocks the write"]
   R5["references/<br/>output_templates.md"] -. governs .-> P3
   P3 --> OUT["OUTPUT — brief.md<br/>family register + clinician register<br/>every clinical specific cited with a date"]

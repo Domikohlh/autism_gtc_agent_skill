@@ -26,6 +26,31 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "tests" / "fixtures"
 PARSER = ROOT / "scripts" / "parse_report.py"
+INDICATIONS = ROOT / "scripts" / "indication_lookup.py"
+
+# indication_lookup.py: free-text clinical picture -> which indications match.
+# The two failure modes both overpromise, so both are pinned here:
+#   - a single feature matching a two-feature indication ("autism" alone)
+#   - a negated feature counting as present ("no developmental delay")
+INDICATION_EXPECTED: list[tuple[str, list[str], bool]] = [
+    # features, expected indication keys (order-insensitive), matched_via_absence
+    ("autism, learning delay, macrocephaly", ["asd_with_dd_or_id"], False),
+    ("autism, global developmental delay, heart murmur",
+     ["asd_with_dd_or_id", "dysmorphism_or_congenital_anomaly"], False),
+    # "autism" alone must NOT reach the with-delay indication.
+    ("autism", ["asd_without_dd_or_id"], True),
+    # A negated feature must not count as present.
+    ("autistic, academically ahead, no developmental delay",
+     ["asd_without_dd_or_id"], True),
+    # ...and a negation elsewhere must not suppress a real feature.
+    ("autistic, no seizures, global developmental delay", ["asd_with_dd_or_id"], False),
+    ("autism, epilepsy, regression",
+     ["asd_with_dd_or_id", "epilepsy_with_ndd"], False),
+    # Epilepsy without a neurodevelopmental feature is out of scope, not a match.
+    ("epilepsy only", [], False),
+    ("sibling tested for the same thing", ["family_history"], False),
+    ("previous exome came back normal", ["prior_nondiagnostic_reanalysis"], False),
+]
 
 # fixture -> expected structure.
 #   genes/cnvs/repeats : ordered lists of the identifying field
@@ -293,6 +318,26 @@ def leak_scan() -> list[str]:
     return failures
 
 
+def check_indications() -> list[str]:
+    """Indication matching, which decides whether a picture looks eligible."""
+    failures = []
+    for features, expected, expect_absence in INDICATION_EXPECTED:
+        out = subprocess.run(
+            [sys.executable, str(INDICATIONS), "--features", features, "--json"],
+            capture_output=True, text=True, check=True,
+        )
+        got = json.loads(out.stdout)
+        keys = sorted(got["indications"])
+        if keys != sorted(expected):
+            failures.append(f"{features!r}: expected {sorted(expected)}, got {keys}")
+        absence = bool(got.get("matched_via_absence"))
+        if absence != expect_absence:
+            failures.append(
+                f"{features!r}: matched_via_absence expected {expect_absence}, got {absence}"
+            )
+    return failures
+
+
 def corpus_is_synthetic() -> list[str]:
     """
     Every fixture must announce itself as synthetic.
@@ -347,6 +392,12 @@ def main() -> int:
         print(f"  LEAK  {leak}")
     print(f"  {'no leaks' if not leaks else str(len(leaks)) + ' LEAKS — fix before shipping'}")
 
+    print("\nIndication matching (testing-gap step):")
+    indication_failures = check_indications()
+    for f in indication_failures:
+        print(f"  FAIL  {f}")
+    print(f"  {len(INDICATION_EXPECTED) - len(indication_failures)}/{len(INDICATION_EXPECTED)} pictures routed correctly")
+
     print("\nSynthetic-corpus check:")
     unmarked = corpus_is_synthetic()
     for u in unmarked:
@@ -356,7 +407,7 @@ def main() -> int:
     if failed:
         print("\nA failure means the parser changed. Read the diff before editing "
               "expectations — the fixture may be right and the parser wrong.")
-    return 1 if (failed or leaks or unmarked) else 0
+    return 1 if (failed or leaks or unmarked or indication_failures) else 0
 
 
 if __name__ == "__main__":

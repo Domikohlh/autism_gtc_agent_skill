@@ -1,7 +1,10 @@
 # Testing Indications Policy
 
 How to decide what may be claimed about whether genetic testing is indicated, and what
-may not. Read before writing anything for the Testing Gap Checker.
+may not. Read at Step 6, before writing anything about further testing or access.
+
+Most of this belongs in the **clinician register** — it is follow-up for whoever can act
+on it. The family half gets a plain directive line and none of the citations.
 
 ---
 
