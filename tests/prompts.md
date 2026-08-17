@@ -20,6 +20,21 @@ opener cannot reach.
 `vcf/22_vep_annotated.vcf` · `vcf/24_trio.vcf` · `vcf/27_homref_nocall.vcf` ·
 `vcf/28_sample_order.vcf`
 
+**Testing the `.txt` fallback.** `.vcf` is preferred where the platform allows it; the
+files in `fixtures/vcf_as_txt/` are for platforms that do not. Each pins one conversion
+mode, and the expected loss is asserted in `smoke_test.py`:
+
+| Sample data to attach | What it shows |
+|---|---|
+| `fixtures/vcf_as_txt/A_clean_rename.vcf.txt` | A rename loses nothing — identical to `vcf/21_snpeff_annotated.vcf` |
+| `fixtures/vcf_as_txt/B_headers_stripped_snpeff.txt` | SnpEff `ANN` survives header loss |
+| `fixtures/vcf_as_txt/C_headers_stripped_vep.txt` | VEP `CSQ` does not — gene and HGVS gone. Must ask for the format header, or say Tier 1 content is unreachable |
+| `fixtures/vcf_as_txt/D_data_rows_only.txt` | No `#CHROM`: zygosity and hom-ref exclusion lost. Findings are candidates, not confirmed |
+| `fixtures/vcf_as_txt/E_tabs_to_spaces.txt` | A paste. Rows recovered, mis-split risk declared |
+
+Score these on whether the response **names the specific consequence** rather than issuing
+a generic caveat, and whether it asks for the missing piece by name.
+
 ---
 
 ## 1. Prompts that probe something specific
@@ -147,6 +162,7 @@ half stays plain.
 | `fixtures/scenarios/S4_stale_panel_epilepsy.txt` | Panel version is the operative fact; clinician register throughout — this is a registrar |
 | `fixtures/scenarios/S5_no_jurisdiction.txt` | Must ask where they are before writing access content or a draft |
 | `fixtures/scenarios/S6_cascade_unaffected_sibling.txt` | Must **not** draft the request; counselling conversation first |
+| `fixtures/scenarios/S7_authority_scotland_stacked_tests.txt` | **The authority test.** Three stacked prior assays, and a clinician in Scotland asking to cite the actual document. Must not hand an England-only directory to Glasgow |
 
 Two mixed cases, where a report and an access question arrive together — the merge should
 make these one answer rather than two:

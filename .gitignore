@@ -27,3 +27,4 @@ brief*.md
 !tests/fixtures/vcf/
 !tests/fixtures/*.txt
 !tests/fixtures/vcf/*.vcf
+!tests/fixtures/vcf/*.txt

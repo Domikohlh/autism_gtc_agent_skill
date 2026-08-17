@@ -115,7 +115,7 @@ gene-to-care-navigator/
 │   ├── indication_lookup.py    # features + prior tests → gaps, indications, authorities
 │   └── render_brief.py         # findings → two-register brief
 ├── tests/                      # smoke_test.py · cases.md (rubric) · prompts.md
-│   └── fixtures/               #   34 synthetic reports, VCFs and scenarios — no real data
+│   └── fixtures/               #   40 synthetic reports, VCFs, scenarios, .txt conversions
 └── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
@@ -146,9 +146,26 @@ variants, copy-number findings, and repeat expansions.
 ```bash
 python scripts/parse_report.py report.pdf
 python scripts/parse_report.py report.txt --json findings_raw.json
-python scripts/parse_report.py annotated.vcf --sample proband
+python scripts/parse_report.py annotated.vcf.txt --sample proband
 python scripts/parse_report.py --text "NM_001040142.2(SCN2A):c.5645G>A (p.Arg1882Gln), heterozygous, pathogenic"
 ```
+
+> **`.vcf` preferred, `.txt` as fallback.** Some platforms accept `.vcf` uploads; several
+> refuse them. Format is detected from content — the `##fileformat` or `#CHROM` line — never
+> from the extension, so `results.vcf` renamed to `results.vcf.txt` parses **identically**.
+>
+> The rename costs nothing. What a *conversion* does to the content is what costs, and the
+> parser names which happened in `warnings`:
+>
+> | What reached the parser | Lost |
+> |---|---|
+> | `.vcf`, or a clean rename | nothing |
+> | `##` headers stripped, SnpEff `ANN` | nothing material — ANN field order is fixed by spec |
+> | `##` headers stripped, VEP `CSQ` | gene and HGVS — CSQ field order lived in that header |
+> | `#CHROM` gone, data rows only | zygosity, hom-ref exclusion, sample identity, the VCF caveat |
+> | Tabs turned to spaces by a paste | nothing, but a field containing a space could mis-split |
+>
+> Worked examples of all five are in `tests/fixtures/vcf_as_txt/`.
 
 It is deliberately conservative, and most of its design is about *not* asserting things
 the source did not say:
@@ -240,6 +257,13 @@ the parser redacts with, so the two cannot drift apart.
 7. **De-identify by default** — enforced in code, with limits worth knowing:
    see [Data privacy and confidentiality](#data-privacy-and-confidentiality).
 8. **No unsourced risk numbers.** A remembered percentage is worse than none.
+9. **No eligibility determination.** Whether testing is *recommended* is a clinical
+   question with a published answer; whether *this person is eligible* is a policy question
+   for their health system. Never "you qualify" or "this will be approved" — overstating
+   access sets a family up for a refusal they were told would not come.
+10. **Never invent a clinical feature to strengthen a request.** Only what the user
+    reported goes into a drafted referral or funding request, and any draft is for a human
+    to check and send.
 
 Showing the reasoning for every assertion is also what keeps this inside the 21st Century
 Cures Act §3060 clinical-decision-support carve-out rather than in medical-device
@@ -316,6 +340,11 @@ exists — not to look comprehensive.
 - **Chromatin / scaffold** — MECP2, SHANK3, SYNGAP1, CHD8, ADNP, ARID1B, ANKRD11, DYRK1A, KMT2A, POGZ, MED13L
 - **Other** — FMR1, UBE3A, NRXN1, PPP2R5D, SETD5, AUTS2
 
+For the testing-gap step, `assets/indication_index.json` carries 6 clinical indications,
+7 prior-test blind-spot entries, and 4 governing authorities (ACMG 2021, the NHS National
+Genomic Test Directory, ACMG SF v3.3, ACMG fragile X). Like the gene index it holds no
+eligibility criteria, age thresholds or yield figures — only which document governs.
+
 **Adding a gene:** add an entry to `assets/gene_index.json` (`syndrome`, `tier1_domains`,
 `tier2_domains`, `sources`, `traps`, `organisations`; aliases use
 `{"GENE2": {"same_as": "GENE1"}}`), then a matching prose section in
@@ -333,7 +362,7 @@ python scripts/gene_lookup.py --list          # index integrity
 
 Testing splits into two layers, and only one can be automated.
 
-**Parser layer** — `smoke_test.py` runs 28 synthetic fixtures through `parse_report.py`
+**Parser layer** — `smoke_test.py` runs 40 synthetic fixtures through `parse_report.py`
 and asserts what came out. Expectations were recorded from verified runs rather than
 written from intent, so a failure means behaviour changed — read the diff before editing
 the expectation. It also cross-checks every planted identifier against *every* fixture's
@@ -365,6 +394,15 @@ step** — see [Data privacy](#data-privacy-and-confidentiality) first.
   inverts the treatment.
 - **Guideline currency depends on retrieval.** If a guideline is superseded, the pointer
   needs updating.
+- **Eligibility is never determined.** The testing-gap step reports what is *recommended*
+  and names the authority; whether a given person qualifies is a policy question for their
+  health system and clinical service, and the tool will not answer it.
+- **The indication index is a starting set too**, and its access pathways cover the UK and
+  US only. Elsewhere it gives the clinical recommendation and says plainly that it does not
+  know the local route.
+- **Feature matching is string-based.** It requires two independent features before
+  claiming the with-developmental-delay indication and ignores negated mentions, but it
+  reads text, not meaning — check what it matched on, which it prints.
 
 ---
 

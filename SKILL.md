@@ -64,6 +64,19 @@ If a file was provided, use `scripts/parse_report.py` to pull out the structured
 It reads PDF, text and VCF, and emits JSON. If the user pasted or described the result,
 run it with `--text` or extract the same fields by reading.
 
+**If a platform refuses the file type, tell them to rename it to `.txt`.** Format is
+detected from content, never from the extension, so `results.vcf` renamed to
+`results.vcf.txt` parses identically. It is a two-second fix that otherwise ends the
+conversation.
+
+The rename costs nothing; what a *conversion* does to the content can. The parser names
+which happened in `warnings` — read them, then: **ask for what was lost by name** (this
+audience can often just supply it — "the CSQ format header", not "the file seems
+incomplete"); **if they cannot, proceed anyway and state the specific consequence** in the
+brief, not a generic caveat; and **never reconstruct a lost field by inference** — a
+missing genotype is missing, not assumed heterozygous. The conversion modes and exactly
+what each costs are tabulated in `references/report_parsing.md`.
+
 What you need:
 
 - **Gene symbol** and, if present, the transcript (`NM_...`) and HGVS notation
@@ -193,8 +206,9 @@ go unread.
 Produce **two versions** of the output, using the templates in
 `references/output_templates.md`:
 
-- **For the family** — plain language, no jargon without explanation, honest about
-  uncertainty, ends with concrete questions to bring to the next appointment.
+- **For the family** — plain and directive, honest about uncertainty, ends with concrete
+  questions to bring to the next appointment. A technical term is deleted, not explained;
+  see the tone rules below and the register discipline in `output_templates.md`.
 - **For the clinician** — technical, ACMG-framed, cited, with retrieval dates.
 
 Write both unless the user clearly only wants one. The family version is not a

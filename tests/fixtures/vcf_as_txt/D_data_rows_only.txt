@@ -1,0 +1,5 @@
+# Synthetic test document — fictional data, generated for software testing. Not a real person.
+chr10	87933147	.	C	T	820	PASS	ANN=T|stop_gained|HIGH|PTEN|ENSG00000171862|transcript|NM_000314.8|protein_coding|7/9|c.697C>T|p.Arg233Ter;CLNSIG=Pathogenic	GT:DP	0/1:96
+chr2	165390560	.	G	A	744	PASS	ANN=A|missense_variant|MODERATE|SCN2A|ENSG00000136531|transcript|NM_001040142.2|protein_coding|27/27|c.5645G>A|p.Arg1882Gln;CLNSIG=Likely_pathogenic	GT:DP	0/1:88
+chr14	21386218	.	T	C	612	PASS	ANN=C|missense_variant|MODERATE|CHD8|ENSG00000100888|transcript|NM_001170629.2|protein_coding|31/38|c.4837A>G|p.Ile1613Val;CLNSIG=Uncertain_significance	GT:DP	0/1:74
+chrX	147912051	.	C	T	530	PASS	ANN=T|missense_variant|MODERATE|FMR1|ENSG00000102081|transcript|NM_002024.6|protein_coding|3/17|c.100C>T|p.Arg34Cys	GT:DP	1:61

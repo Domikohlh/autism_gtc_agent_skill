@@ -4,6 +4,9 @@ Extract structured findings from a genetic test report.
 
 Handles plain text, PDF (via pdfplumber or pdftotext), and VCF. Emits JSON.
 
+Format is detected from content, not from the file extension, so a VCF renamed
+to .txt — which several upload platforms require — parses identically.
+
 This is a first-pass extractor: it finds candidate fields and flags what it is
 unsure about. It is deliberately conservative — it would rather report
 `needs_review` than assert a wrong variant string. Always eyeball the output
@@ -19,7 +22,7 @@ Usage:
     python parse_report.py report.pdf
     python parse_report.py report.txt --json out.json
     python parse_report.py --text "SCN2A c.5645G>A p.(Arg1882Gln) heterozygous, pathogenic"
-    python parse_report.py annotated.vcf
+    python parse_report.py annotated.vcf        # or annotated.vcf.txt — content decides
 """
 
 from __future__ import annotations
@@ -801,6 +804,21 @@ ANN_GENE, ANN_FEATURE, ANN_HGVS_C, ANN_HGVS_P = 3, 6, 9, 10
 
 MAX_VCF_RECORDS = 200
 
+# A VCF is recognised by its content, never its extension. Several platforms
+# refuse .vcf uploads, so these arrive renamed to .txt or pasted in whole — and
+# a paste often loses the `##fileformat` line, leaving `#CHROM` as the only
+# marker. Without this, such a file falls through to the prose parser, which
+# picks HGVS out of the ANN= field and looks like it worked while silently
+# dropping zygosity, the CLNSIG classification, the homozygous-reference
+# exclusion, and the warning that a VCF carries no interpretation.
+VCF_FILEFORMAT = re.compile(r"^##fileformat=VCF", re.MULTILINE)
+VCF_COLUMN_HEADER = re.compile(r"^#CHROM\s+POS\s+ID\s+REF\s+ALT", re.MULTILINE)
+
+
+def looks_like_vcf(text: str) -> bool:
+    head = text[:8000]
+    return bool(VCF_FILEFORMAT.search(head) or VCF_COLUMN_HEADER.search(head))
+
 
 # Genotype call status. `reference` is the one that matters most: a 0/0 row
 # means the sample does NOT carry that variant, and emitting it as a finding
@@ -847,6 +865,8 @@ def parse_vcf(text: str, source: str | None = None, sample: str | None = None) -
     sample_index = 0
     unannotated = 0
     reference_calls = 0
+    detabbed = 0
+    csq_header_missing = 0
 
     for line in text.splitlines():
         if line.startswith("##"):
@@ -870,6 +890,12 @@ def parse_vcf(text: str, source: str | None = None, sample: str | None = None) -
             continue
 
         cols = line.rstrip("\n").split("\t")
+        if len(cols) < 8 and len(line.split()) >= 8:
+            # Tabs turn into spaces when a VCF is pasted into a text file or
+            # through a rich-text field. VCF fields contain no spaces, so
+            # splitting on whitespace recovers the row rather than dropping it.
+            cols = line.split()
+            detabbed += 1
         if len(cols) < 8:
             continue
         if len(rec.variants) >= MAX_VCF_RECORDS:
@@ -889,6 +915,13 @@ def parse_vcf(text: str, source: str | None = None, sample: str | None = None) -
 
         ann = info_map.get("ANN") or info_map.get("EFF")
         csq = info_map.get("CSQ")
+        if csq and not csq_fields:
+            # VEP writes CSQ field order into ##INFO=<ID=CSQ,...Format: ...>.
+            # Strip the ## headers — as pasting into a text file often does —
+            # and the annotation becomes undecodable: the values are all still
+            # there, but nothing says which is the gene. SnpEff's ANN survives
+            # the same treatment because its field order is fixed by spec.
+            csq_header_missing += 1
         if ann:
             fields = ann.split(",")[0].split("|")
             if len(fields) > ANN_HGVS_P:
@@ -959,6 +992,20 @@ def parse_vcf(text: str, source: str | None = None, sample: str | None = None) -
             f"Genotypes were read from '{sample_names[sample_index]}'. Confirm that is the "
             "individual the report concerns — sample order is a convention, not a rule. "
             "Use --sample NAME to choose another."
+        )
+    if csq_header_missing:
+        rec.warnings.append(
+            f"{csq_header_missing} record(s) carry VEP CSQ annotation whose format header "
+            "(##INFO=<ID=CSQ,...Format: ...>) is missing, so gene and HGVS could not be "
+            "read — the values are present but nothing states their order. This is what "
+            "stripping the ## header lines costs. Ask for the original file, or for that "
+            "one header line."
+        )
+    if detabbed:
+        rec.warnings.append(
+            f"{detabbed} row(s) were tab-free and had to be split on spaces — this file "
+            "has been through a conversion that lost its tabs. Fields containing spaces "
+            "would be mis-split; check the output against the original."
         )
     if reference_calls:
         rec.warnings.append(
@@ -1063,16 +1110,13 @@ def parse_text(text: str, source: str | None = None, do_redact: bool = True,
     """Redact first, then parse — see `redact` for why the order matters."""
     if do_redact:
         text = redact(text)
-    if text.lstrip().startswith("##fileformat=VCF"):
+    if looks_like_vcf(text):
         return finalise_warnings(parse_vcf(text, source=source, sample=sample))
     return parse(text, source=source)
 
 
 def parse_path(path: Path, do_redact: bool = True, sample: str | None = None) -> ReportRecord:
-    text = read_text(path)
-    if path.suffix.lower() == ".vcf" and not text.lstrip().startswith("##fileformat=VCF"):
-        text = "##fileformat=VCFv4.2\n" + text  # tolerate a headerless .vcf
-    return parse_text(text, source=str(path), do_redact=do_redact, sample=sample)
+    return parse_text(read_text(path), source=str(path), do_redact=do_redact, sample=sample)
 
 
 def main() -> int:

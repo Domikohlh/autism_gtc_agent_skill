@@ -50,6 +50,23 @@ INDICATION_EXPECTED: list[tuple[str, list[str], bool]] = [
     ("epilepsy only", [], False),
     ("sibling tested for the same thing", ["family_history"], False),
     ("previous exome came back normal", ["prior_nondiagnostic_reanalysis"], False),
+    # A negator only governs its own clause. A fixed character window got this
+    # wrong both ways: missing a long negation, then suppressing across a comma.
+    ("autism without any significant developmental delay",
+     ["asd_without_dd_or_id"], True),
+    ("autistic, denies any history of seizures, global developmental delay",
+     ["asd_with_dd_or_id"], False),
+    # A passing mention of a sibling is not a family-history indication.
+    ("his brother's paperwork got mixed up", [], False),
+    # ...and "my son was diagnosed" is a parent describing the proband, not a
+    # family history. Kinship words identify either; the phrase is what marks it.
+    ("my son was diagnosed autistic, global developmental delay",
+     ["asd_with_dd_or_id"], False),
+    ("family history of intellectual disability", ["family_history"], False),
+    # S7: dysmorphism alongside ASD+ID must reach BOTH indications, since each
+    # carries a different authority set.
+    ("autism, moderate intellectual disability, dysmorphic features, hypertelorism",
+     ["asd_with_dd_or_id", "dysmorphism_or_congenital_anomaly"], False),
 ]
 
 # fixture -> expected structure.
@@ -200,6 +217,41 @@ EXPECTED: dict[str, dict] = {
         "genes": ["SCN2A", "CHD8"],
         "zygosities": [None, "heterozygous"],
         "must_flag": ["2 record(s) were homozygous reference"],
+    },
+    # --- .txt fallback for platforms that refuse .vcf uploads -------------
+    # A clean rename loses nothing. What a *conversion* does to the content is
+    # what costs, and each of these pins one measured mode.
+    "vcf_as_txt/A_clean_rename.vcf.txt": {
+        # Byte-identical to vcf/21, renamed. Must parse identically.
+        "genes": ["PTEN", "SCN2A", "CHD8", "FMR1"],
+        "classes": ["Pathogenic", "Likely pathogenic", "VUS", None],
+        "zygosities": ["heterozygous", "heterozygous", "heterozygous", "hemizygous"],
+        "must_flag": ["Input was a VCF"],
+    },
+    "vcf_as_txt/B_headers_stripped_snpeff.txt": {
+        # SnpEff ANN field order is fixed by spec, so it survives header loss.
+        "genes": ["PTEN", "SCN2A", "CHD8", "FMR1"],
+        "zygosities": ["heterozygous", "heterozygous", "heterozygous", "hemizygous"],
+        "must_flag": ["Input was a VCF"],
+    },
+    "vcf_as_txt/C_headers_stripped_vep.txt": {
+        # VEP CSQ field order lives in the stripped header — gene and HGVS go
+        # with it. The values are still present; nothing states what they are.
+        "genes": [None, None, None],
+        "zygosities": ["heterozygous", "heterozygous", "heterozygous"],
+        "must_flag": ["format header", "had no gene annotation"],
+    },
+    "vcf_as_txt/D_data_rows_only.txt": {
+        # No #CHROM line: falls out of the VCF path altogether. Genes survive
+        # only because the prose parser finds HGVS inside the ANN= text.
+        "genes": ["PTEN", "SCN2A", "CHD8", "FMR1"],
+        "zygosities": [None, None, None, None],
+    },
+    "vcf_as_txt/E_tabs_to_spaces.txt": {
+        # A rich-text paste. Rows are recovered, and the recovery is declared.
+        "genes": ["PTEN", "SCN2A", "CHD8", "FMR1"],
+        "zygosities": ["heterozygous", "heterozygous", "heterozygous", "hemizygous"],
+        "must_flag": ["tab-free"],
     },
     "vcf/28_sample_order.vcf": {
         # Proband is the THIRD sample. Default reads the first and says so.

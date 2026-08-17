@@ -30,16 +30,25 @@ INDEX_PATH = Path(__file__).resolve().parent.parent / "assets" / "indication_ind
 # reads a parent ruling a feature OUT as evidence that it is present, and routes
 # the contested no-delay picture into the indication that looks clearly eligible.
 NEGATOR = re.compile(
-    r"(?:\bno\b|\bnot\b|\bwithout\b|\bdenie[sd]\b|\babsent\b|\bnegative for\b"
-    r"|\bfree of\b|\bruled out\b|\bnever\b)[\s\w]{0,12}$",
+    r"\b(?:no|not|without|denie[sd]|absent|negative\s+for|free\s+of|ruled\s+out|never)\b",
     re.IGNORECASE,
 )
+
+# Negation belongs to its own clause. A fixed character window gets this wrong in
+# both directions at once: too short and "autism without any significant
+# developmental delay" reads as delay being present; too long and "no seizures,
+# global developmental delay" reads the delay as negated too. Bounding the scan
+# at the nearest clause break fixes both, because negation does not cross one.
+# `with` breaks a clause; `without` must not, so it is excluded by lookahead.
+CLAUSE_BREAK = re.compile(r"[,;:.()\n]|\band\b|\bbut\b|\bwith\b(?!out)", re.IGNORECASE)
 
 
 def mentions(term: str, text: str) -> bool:
     """Whether `term` appears in `text` other than under a negation."""
     for m in re.finditer(re.escape(term.lower()), text):
-        if not NEGATOR.search(text[max(0, m.start() - 25):m.start()]):
+        prefix = text[:m.start()]
+        clause_start = max((b.end() for b in CLAUSE_BREAK.finditer(prefix)), default=0)
+        if not NEGATOR.search(prefix[clause_start:]):
             return True
     return False
 

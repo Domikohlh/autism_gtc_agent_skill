@@ -24,7 +24,7 @@
       "body": "NHS England",
       "jurisdiction": "England; Scotland, Wales and NI operate related but separate arrangements",
       "establishes": "Which test is commissioned for which clinical indication, and the eligibility criteria a patient must meet. This is the operative document for NHS access — it states eligibility explicitly, and it is revised periodically.",
-      "find_by": "Search 'NHS National Genomic Test Directory rare and inherited disease' on england.nhs.uk for the current version and its eligibility criteria document",
+      "find_by": "Search 'NHS National Genomic Test Directory rare and inherited disease' on england.nhs.uk for the current version and its eligibility criteria document. OUTSIDE ENGLAND this document does not govern: for Scotland, Wales or Northern Ireland, cite ACMG 2021 for the clinical recommendation and establish the access route with the local clinical genetics service rather than naming a framework you have not retrieved.",
       "url": "https://www.england.nhs.uk/genomics/"
     },
     "ACMG_SF": {
@@ -186,14 +186,23 @@
       "trigger_groups": [
         [
           "family history",
-          "known familial variant",
+          "familial variant",
+          "known familial",
           "cascade",
-          "sibling",
-          "brother",
-          "sister",
-          "cousin",
+          "runs in the family",
+          "same variant",
+          "same change",
+          "same mutation",
+          "same gene",
           "same thing",
-          "tested for the same"
+          "tested for the same",
+          "carrier testing",
+          "also affected",
+          "affected relative",
+          "affected sibling",
+          "affected brother",
+          "affected sister",
+          "affected parent"
         ]
       ],
       "commonly_indicated": [
