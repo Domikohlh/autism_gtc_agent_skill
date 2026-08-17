@@ -1,0 +1,53 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"DejaVu Sans","fontSize":"15px","lineColor":"#8894A1","primaryTextColor":"#1F2933"},"flowchart":{"curve":"basis","nodeSpacing":40,"rankSpacing":46,"wrappingWidth":640,"htmlLabels":true}} }%%
+flowchart TD
+
+  F(["A finding is on the report"])
+
+  G{"Is it a secondary finding,<br/>or a VUS?"}
+
+  SF["<b>Secondary finding</b> — ACMG SF v3.3<br/>Flag it · route to genetic counselling · note the family-cascade implication<br/><i>do not counsel · do not describe the condition · then write it into both registers</i>"]
+
+  VU["<b>VUS</b><br/>No risk layer applies — a VUS carries no risk information<br/><i>must not drive surveillance or cascade testing · then write it into both registers</i>"]
+
+  Q{"<b>Is there a published protocol or guideline<br/>that DEFINES AN ACTION?</b>"}
+
+  T1["<b>TIER 1 — established surveillance</b><br/>Include prominently · name the document · retrieve the specifics with a date<br/><i>frame it as standard care, not prediction</i>"]
+
+  T2["<b>TIER 2 — documented association</b><br/>Include as awareness · more common but not inevitable · treatable · who to tell<br/><i>never a percentage you did not retrieve in this session</i>"]
+
+  T3["<b>TIER 3 — speculative</b><br/>Exclude entirely — polygenic scores · risk inferred from a VUS<br/>pathway analogy · developmental trajectory predictions<br/><i>do not generate it, even if asked</i>"]
+
+  M{"Individual is a minor, the finding is adult-onset,<br/>and there is nothing to do in childhood?"}
+
+  DNE["<b>Do not elaborate</b><br/>note that implications exist and belong in a genetics<br/>conversation at the appropriate time"]
+
+  W(["<b>Write into both registers</b><br/><i>never recite ages, intervals, modalities or doses from memory</i>"])
+
+  F --> G
+  G -- "neither" --> Q
+  G -- "secondary finding" --> SF
+  G -- "VUS" --> VU
+
+  Q -- "yes" --> T1
+  Q -- "no, but documented<br/>elevated risk" --> T2
+  Q -- "no" --> T3
+
+  T1 --> M
+  T2 --> M
+  M -- "yes" --> DNE
+  M -- "no" --> W
+  DNE --> W
+
+  classDef io fill:#E9F4EC,stroke:#2E6B4A,stroke-width:1.5px,color:#14342A;
+  classDef gate fill:#FFF6E8,stroke:#B0761A,stroke-width:1.4px,color:#5A3B06;
+  classDef t1 fill:#E9F4EC,stroke:#2E6B4A,stroke-width:1.5px,color:#14342A;
+  classDef t2 fill:#EDF2F9,stroke:#3E6394,stroke-width:1.5px,color:#1B3357;
+  classDef t3 fill:#FBECEC,stroke:#A83232,stroke-width:1.5px,color:#5E1414;
+  classDef route fill:#F6EFF7,stroke:#7A4E96,stroke-width:1.4px,color:#3A2350;
+
+  class F,W io;
+  class G,Q,M gate;
+  class T1 t1;
+  class T2 t2;
+  class T3 t3;
+  class SF,VU,DNE route;
