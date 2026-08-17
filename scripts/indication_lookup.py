@@ -134,7 +134,7 @@ def render_authority(index: dict, key: str) -> list[str]:
 
 
 def render_indication(index: dict, key: str, entry: dict, matched: list[str],
-                      via_absence: bool = False) -> str:
+                      via_absence: bool = False, brief: bool = False) -> str:
     out = [f"## {entry['label']}"]
     if matched:
         out.append(f"_(matched on: {', '.join(sorted(set(matched)))})_")
@@ -160,8 +160,14 @@ def render_indication(index: dict, key: str, entry: dict, matched: list[str],
     out.append("")
 
     out.append("### Authorities to fetch")
-    for a in entry.get("authorities", []):
-        out += render_authority(index, a)
+    if brief:
+        # Named here, detailed once at the end — only worth it when more than
+        # one indication matched, or the summary costs more than it saves.
+        out += [f"  - {index['authorities'].get(a, {}).get('name', a)}"
+                for a in entry.get("authorities", [])]
+    else:
+        for a in entry.get("authorities", []):
+            out += render_authority(index, a)
     out.append("")
 
     if entry.get("notes"):
@@ -349,8 +355,22 @@ def main() -> int:
 
     if args.features:
         if hits:
+            brief = len(hits) > 1
             for key, entry, matched, via_absence in hits:
-                print(render_indication(index, key, entry, matched, via_absence))
+                print(render_indication(index, key, entry, matched, via_absence, brief))
+            # Each authority once, however many indications cite it — the block
+            # for the test directory alone ran to four repeats in one call.
+            cited: list[str] = []
+            if brief:
+                for _k, entry, _m, _a in hits:
+                    for a in entry.get("authorities", []):
+                        if a not in cited:
+                            cited.append(a)
+            if cited:
+                print("## Authorities — fetch these")
+                for a in cited:
+                    print("\n".join(render_authority(index, a)))
+                print()
         else:
             print(f"No curated indication matched: {args.features}\n")
             print(NO_MATCH_GUIDANCE)

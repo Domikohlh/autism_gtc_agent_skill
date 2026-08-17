@@ -71,6 +71,13 @@ source, it names the document and stops.
 
 Mermaid source: [`docs/workflow.mmd`](docs/workflow.mmd)
 
+**Every output has two registers, and the family one is not a simplified version of the
+clinician one.** They answer different questions. Families ask *what does this mean for us,
+and what do we do*; clinicians ask *what is the evidence, and what am I obliged to act on*.
+The family half is plain and directive, carries no citations, and stays under ~800 words;
+the clinician half is technical, cited, and carries the testing-gap and further-testing
+sections. `render_brief.py` assembles both and warns when the family half drifts technical.
+
 The **scripts form the data spine**; the **reference files govern judgement**. Scripts
 move and shape data — they never make a clinical call.
 
@@ -85,6 +92,7 @@ move and shape data — they never make a clinical call.
 | 5b · Reanalysis | `indication_lookup.py --report-date` | `testing_indications.md` | Elapsed years, whether there is data to reanalyse |
 | 6 · Testing gap | `indication_lookup.py` + `indication_index.json` | `testing_indications.md` | Prior-assay blind spots, what is indicated, whose authority |
 | 7 · Render | `render_brief.py` | `output_templates.md` | `brief.md`, both registers |
+| — · Translate | `plain_language.py` | `output_templates.md` | A technical document put into words a family can use. A separate entry point, not a step: the asker is technical, the audience is not |
 
 ---
 
@@ -241,6 +249,12 @@ python scripts/indication_lookup.py --features "autism, developmental delay" --h
 python scripts/indication_lookup.py --report-date "21 October 2019" --had exome --singleton
 python scripts/indication_lookup.py --list
 ```
+
+Where the user wants the actual wording to take to a clinician, a genetics service or a
+payer, `references/request_templates.md` carries talking points and a request draft in UK
+and US forms. Identifiers stay as placeholders even when the real values are known, and the
+review-and-send statement sits inside the drafted document rather than only in the chat —
+drafts get separated from the conversation they came from.
 
 `--report-date` adds the reanalysis assessment: elapsed years, and whether there is
 anything to reanalyse at all. That second question decides whether the request succeeds —
