@@ -104,19 +104,33 @@ the same Tier 3 rule that governs the Navigator applies here.
 
 ## Reanalysis versus new testing
 
-These are different requests with different costs and different answers, and they get
-muddled.
+These are different requests with different costs, and asking for the wrong one wastes it.
 
 - **Reanalysis** re-examines existing sequencing data against current knowledge. Cheaper,
-  often possible without a new sample, and worth asking about when a non-diagnostic result
-  is more than roughly two years old.
-- **New testing** is a fresh assay, usually because the original test could not have found
-  the answer — a microarray where an exome is indicated.
+  usually possible without a new sample, and worth raising when a non-diagnostic result is
+  more than roughly two years old.
+- **New testing** is a fresh assay — because the original could not have found the answer.
+  **A microarray, karyotype or FISH leaves no sequence data**, so there is nothing to
+  reanalyse and the ask is new testing. `indication_lookup.py --report-date` states which,
+  per assay, and does the date arithmetic.
 
-Establish which is being asked for before drafting anything. And check the report date:
-recommending reanalysis of a recent report wastes a request and undermines the rest.
+**Build the case from case-level facts, and stop there.** Report date, which assay, what it
+could not cover, singleton versus trio. Those four are the argument:
 
----
+> "This was a singleton exome reported in 2019. Reanalysis against current knowledge is
+> reasonable to request, and adding parental samples would resolve variants the original
+> analysis had to leave uncertain."
+
+That is complete without naming a gene.
+
+**Do not name which genes have been described since the report.** It needs a time-indexed
+discovery list nobody here holds, it goes stale the week it is written, and reciting one
+from memory is precisely what the never-from-memory rule forbids. If asked directly, say
+that establishing it needs a current source you have not retrieved — and note that it does
+not change the request, which rests on the assay and the date.
+
+**Singleton is its own point.** Adding parental samples is a distinct ask from reanalysis
+and often the stronger one. Name it separately rather than folding it in.
 
 ## Refusals
 

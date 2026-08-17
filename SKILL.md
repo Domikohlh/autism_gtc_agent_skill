@@ -1,6 +1,6 @@
 ---
 name: gene-to-care-navigator
-description: Translates a genetic test report for autism or another neurodevelopmental condition into plain-language explanation plus the published, actionable care implications of the gene found — surveillance protocols, medication considerations, patient organisations, and registries. Use whenever someone shares or describes a genetics report, microarray, exome, genome, or gene panel result, or names a specific gene or chromosomal finding (PTEN, SCN2A, MECP2, TSC1/2, SHANK3, SYNGAP1, 16p11.2, 22q11.2, FMR1 and similar) in a neurodevelopmental context; asks what a variant or result means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a genetic finding carries risk of cancer, epilepsy, heart problems or other future conditions. Also use for negative or non-diagnostic reports, where the answer is what to do next — including what the testing already done could not have found, what further testing is guideline-indicated, and the wording to take to a clinician, a genetics service or a payer. Trigger even without the word "genetics" — a pasted variant string or a gene symbol with a clinical question both count.
+description: Translates a genetic test report for autism or another neurodevelopmental condition into plain-language explanation plus the published, actionable care implications of the gene found — surveillance protocols, medication considerations, patient organisations, and registries. Use whenever someone shares or describes a genetics report, microarray, exome, genome, or gene panel result, or names a specific gene or chromosomal finding (PTEN, SCN2A, MECP2, TSC1/2, SHANK3, SYNGAP1, 16p11.2, 22q11.2, FMR1 and similar) in a neurodevelopmental context; asks what a variant or result means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a genetic finding carries risk of cancer, epilepsy, heart problems or other future conditions. Also use when a clinician, clinical scientist or genetic counsellor asks for a technical document, report paragraph or letter to be put into plain language for a patient and family. Also use for negative or non-diagnostic reports, where the answer is what to do next — including what the testing already done could not have found, what further testing is guideline-indicated, and the wording to take to a clinician, a genetics service or a payer. Trigger even without the word "genetics" — a pasted variant string or a gene symbol with a clinical question both count.
 ---
 
 # Gene-to-Care Navigator
@@ -159,7 +159,7 @@ The short version: a VUS is not a diagnosis, is not actionable, and should not d
 surveillance. Explain *why* uncertainty is normal and *what would resolve it* — those
 two things convert fear into a plan.
 
-### Step 5 — Consider whether the report is stale
+### Step 5 — Staleness and reanalysis
 
 If the report is more than roughly two years old and was non-diagnostic, say so. Gene
 discovery has moved substantially (Fu et al., *Nature Genetics*, 2022; Zhou et al.,
@@ -171,6 +171,25 @@ is often the single most valuable line in the output.
 **A negative or non-diagnostic report belongs here, in full.** Explain what it does and
 does not establish, what the assay could not have found, and what the reasonable next
 steps are. That is delivery of published guidance, which is what this skill does.
+
+Do not do the date arithmetic yourself — pass the report date and prior assay to the
+script, which also decides whether reanalysis is even the right request:
+
+```bash
+python scripts/indication_lookup.py --report-date "21 October 2019" --had exome --singleton
+```
+
+**Reanalysis and new testing are different asks, and the wrong one wastes the request.**
+Reanalysis re-examines existing sequence data; a microarray, karyotype or FISH leaves none,
+so for those the ask is new testing. The script states which, per assay.
+
+**Do not name which genes have been described since.** That needs a time-indexed discovery
+list this skill does not hold, and reciting one from memory is the failure guardrail 3
+exists to prevent. The argument does not need it: report date, assay, what it could not
+cover, and singleton versus trio *are* the case. "A 2019 singleton exome, reanalysed
+against current knowledge, with parental samples added" is a complete request without a
+single gene named. If the user asks specifically which genes are new, say plainly that
+establishing that needs a current source and you have not retrieved one.
 
 ### Step 6 — Work out the testing gap
 
@@ -217,6 +236,44 @@ simplification of the clinician version; it answers different questions. Familie
 evidence and what am I obliged to act on."
 
 Use `scripts/render_brief.py` to assemble the final document if writing to a file.
+
+## Translating a technical document for a family
+
+A distinct entry point, and increasingly the common one: a clinician, clinical scientist
+or genetic counsellor has a document — a report's interpretation paragraph, a clinic
+letter, their own draft — and wants a version the patient and family can actually read.
+The asker is technical; the audience is not.
+
+```bash
+python scripts/plain_language.py --text "de novo heterozygous pathogenic variant"
+python scripts/plain_language.py letter.txt
+```
+
+The glossary returns the plain rendering for each term and the traps where a careless
+translation changes the meaning. It rewrites nothing, deliberately: substituting phrases
+mechanically produces sentences nobody would write, and the terms that matter most are
+the ones where the whole sentence has to change.
+
+**Translation preserves meaning. Simplification that loses it is a different thing, and
+it is the failure mode here.** Specifically:
+
+- **Never promote a classification.** "Likely pathogenic" is not "pathogenic"; "uncertain"
+  is neither. The gap between them is the most consequential thing on the page.
+- **Never resolve an uncertainty the report left open.** If the laboratory hedged, the
+  translation hedges — in plainer words, with the same amount of doubt.
+- **Never drop a caveat because it is hard to phrase.** Rephrase it. A caveat that
+  disappears in translation reads as certainty the report did not have.
+- **Keep what they must be able to say themselves** — the gene symbol, the syndrome name,
+  the name of the test. They need these to search, to find their community, and to
+  recognise their own paperwork. Explain each once, then use plain words.
+- **Do not add.** A translation is not the place to introduce surveillance, prognosis or
+  risk that was not in the source. If the source omitted something important, say so to
+  the clinician rather than filling it in.
+
+Then write it as the family register — Template A and the register discipline in
+`references/output_templates.md` — and hand it back to the clinician as a draft for them
+to check against the record before it reaches the family. They own the clinical content;
+you changed the words, not the meaning.
 
 ## Tone, and who you are writing for
 
@@ -288,7 +345,7 @@ Read these as needed — they are not all required for every case:
 | `references/report_parsing.md` | Report format is unfamiliar or fields are unclear |
 | `references/testing_indications.md` | Always, at Step 6 — before writing anything about further testing or access |
 | `references/request_templates.md` | The user wants wording for a clinician, genetics service or payer |
-| `references/output_templates.md` | At Step 7, when writing the output |
+| `references/output_templates.md` | At Step 7, and whenever translating a document for a family |
 
 ## Scripts
 
@@ -296,7 +353,8 @@ Read these as needed — they are not all required for every case:
 |---|---|
 | `scripts/parse_report.py` | Extract structured variant / CNV / repeat-expansion records from a report (PDF, text, VCF); redacts identifiers by default |
 | `scripts/gene_lookup.py` | Query the curated index by gene symbol, syndrome name, alias, or cytoband; returns syndrome, sources, care domains, traps |
-| `scripts/indication_lookup.py` | Clinical features + prior tests → what further testing is indicated, which authority governs it, and what the prior assay could not have found |
+| `scripts/indication_lookup.py` | Clinical features + prior tests → what further testing is indicated, which authority governs it, what the prior assay could not have found, and (with `--report-date`) the case-level reanalysis assessment |
+| `scripts/plain_language.py` | Scan technical text and return the plain rendering of each term, plus the traps where translating carelessly changes the meaning |
 | `scripts/render_brief.py` | Assemble the two-register output document; refuses to write a file containing identifiers |
 
 Run `python scripts/<name>.py --help` for usage.

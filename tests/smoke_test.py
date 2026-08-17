@@ -76,109 +76,109 @@ INDICATION_EXPECTED: list[tuple[str, list[str], bool]] = [
 #   must_flag          : substrings that must appear somewhere in warnings
 #   must_not_contain   : substrings that must NOT appear anywhere in the JSON
 EXPECTED: dict[str, dict] = {
-    "01_exome_block_pten_chd8.txt": {
+    "reports/01_exome_block_pten_chd8.txt": {
         "date": "12 March 2026", "test_type": "exome",
         "genes": ["PTEN", "CHD8"], "classes": ["Pathogenic", "VUS"],
         "must_flag": ["Secondary/incidental findings referenced"],
         "must_not_contain": ["7781204", "04/09/2017", "MCG-2026-004411"],
     },
-    "02_exome_column_scn2a.txt": {
+    "reports/02_exome_column_scn2a.txt": {
         # The classification column sits to the LEFT of the variant here.
         "date": "09 February 2026", "test_type": "exome",
         "genes": ["SCN2A"], "classes": ["Pathogenic"],
         "must_flag": ["read from text preceding its variant"],
         "must_not_contain": ["5540982", "17/11/2019"],
     },
-    "03_cma_iscn_22q11.txt": {
+    "reports/03_cma_iscn_22q11.txt": {
         "date": "02 May 2026", "test_type": "microarray",
         "cnvs": [("22q11.21", "deletion", 1)],
         "must_not_contain": ["3391077", "22/05/2021"],
     },
-    "04_cma_prose_16p11_dup.txt": {
+    "reports/04_cma_prose_16p11_dup.txt": {
         # Must NOT also report the reciprocal deletion the text mentions.
         "date": "18 June 2026", "test_type": "microarray",
         "cnvs": [("16p11.2", "duplication", None)],
         "must_not_contain": ["4470221", "30/01/2015"],
     },
-    "05_results_page_cacna1c.txt": {
+    "reports/05_results_page_cacna1c.txt": {
         "date": None, "test_type": None,
         "genes": ["CACNA1C"], "classes": ["Pathogenic"],
         "must_flag": ["Report date not identified", "Test type not identified"],
     },
-    "06_repeat_fmr1_full_mutation.txt": {
+    "reports/06_repeat_fmr1_full_mutation.txt": {
         "date": "28 May 2026",
         "repeats": [("FMR1", "CGG", [340], "full mutation", "fully methylated")],
         "must_flag": ["Repeat expansion result present"],
         "must_not_contain": ["6620144", "08/07/2019"],
     },
-    "07_negative_exome_2019_stale.txt": {
+    "reports/07_negative_exome_2019_stale.txt": {
         "date": "21 October 2019", "test_type": "exome",
         "genes": [], "cnvs": [], "repeats": [],
         "must_flag": ["No variants, CNVs or repeat expansions detected"],
     },
-    "08_negative_cma_recent.txt": {
+    "reports/08_negative_cma_recent.txt": {
         "date": "16 March 2026", "test_type": "microarray",
         "genes": [], "cnvs": [], "repeats": [],
         "must_flag": ["No variants, CNVs or repeat expansions detected"],
     },
-    "09_vus_only_syngap1.txt": {
+    "reports/09_vus_only_syngap1.txt": {
         "date": "30 January 2026", "test_type": "panel",
         "genes": ["SYNGAP1"], "classes": ["VUS"],
     },
-    "10_vus_in_tier1_gene_pten.txt": {
+    "reports/10_vus_in_tier1_gene_pten.txt": {
         "date": "11 May 2026", "test_type": "exome",
         "genes": ["PTEN"], "classes": ["VUS"],
     },
-    "11_secondary_finding_brca2.txt": {
+    "reports/11_secondary_finding_brca2.txt": {
         "date": "04 March 2026", "test_type": "genome",
         "genes": ["SHANK3", "BRCA2"], "classes": ["Pathogenic", "Pathogenic"],
         "must_flag": ["Secondary/incidental findings referenced"],
     },
-    "12_panel_scn1a_dravet.txt": {
+    "reports/12_panel_scn1a_dravet.txt": {
         "date": "14 July 2026", "test_type": "panel",
         "genes": ["SCN1A"], "classes": ["Pathogenic"],
     },
-    "13_uncurated_gene_tbr1.txt": {
+    "reports/13_uncurated_gene_tbr1.txt": {
         "date": "06 February 2026", "test_type": "exome",
         "genes": ["TBR1"], "classes": ["Pathogenic"],
     },
-    "14_multi_finding_ranking.txt": {
+    "reports/14_multi_finding_ranking.txt": {
         "date": "01 April 2026", "test_type": "exome",
         "genes": ["ADNP", "NRXN1", "PTEN"],
         "classes": ["VUS", "VUS", "Pathogenic"],
     },
-    "15_mecp2_rett.txt": {
+    "reports/15_mecp2_rett.txt": {
         "date": "03 June 2026",
         "genes": ["MECP2"], "classes": ["Pathogenic"],
     },
-    "16_transcript_mismatch.txt": {
+    "reports/16_transcript_mismatch.txt": {
         # The parser cannot know the transcript belongs to another gene. It
         # reports what the document says; catching this is the agent's job.
         "date": "20 May 2026", "test_type": "exome",
         "genes": ["SCN2A"], "classes": ["Pathogenic"],
     },
-    "17_name_in_prose.txt": {
+    "reports/17_name_in_prose.txt": {
         # Documented limit: the name is in running prose and IS NOT redacted.
         "date": "24 February 2026", "test_type": "exome",
         "genes": ["ARID1B"], "classes": ["Pathogenic"],
     },
-    "18_non_english_german.txt": {
+    "reports/18_non_english_german.txt": {
         # German labels: the report date is found and the Geburtsdatum excluded,
         # but classification and zygosity are missed and must be flagged.
         "date": "27.03.2026",
         "genes": ["STXBP1"], "classes": [None],
         "must_not_contain": ["15/02/2019"],
     },
-    "19_fmr1_premutation_child.txt": {
+    "reports/19_fmr1_premutation_child.txt": {
         "date": "22 April 2026",
         "repeats": [("FMR1", "CGG", [30, 78], "premutation", "unmethylated")],
         "must_flag": ["Repeat expansion result present"],
     },
-    "20_mosaic_tsc2.txt": {
+    "reports/20_mosaic_tsc2.txt": {
         "date": "09 March 2026", "test_type": "genome",
         "genes": ["TSC2"], "classes": ["Pathogenic"],
     },
-    "25_prompt_injection.txt": {
+    "reports/25_prompt_injection.txt": {
         # The parser has no opinion on the injected text; it extracts the finding.
         "date": "30 April 2026", "test_type": "exome",
         "genes": ["SYNGAP1"], "classes": ["Pathogenic"],
@@ -203,7 +203,7 @@ EXPECTED: dict[str, dict] = {
         "genes": ["PTEN", "ARID1B"],
         "must_flag": ["Input was a VCF", "3 samples"],
     },
-    "26_negative_repeat_limitation.txt": {
+    "reports/26_negative_repeat_limitation.txt": {
         # "repeat expansion", singular, inside a negation in the limitations
         # paragraph. Must NOT become a repeat record, and the negative report
         # must keep its "nothing detected" warning.

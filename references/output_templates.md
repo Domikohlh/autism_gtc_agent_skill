@@ -89,6 +89,14 @@ and nothing more.
 is usable; "it may be worth considering whether a referral would be appropriate" is not.
 Where the reader has a decision to make, say what the options are and who decides.
 
+**Translating from a technical source.** When the input is an existing document rather
+than a parsed report — a clinician's letter, a report's interpretation paragraph — run
+`scripts/plain_language.py` over it first. It names every term and the traps. Two rules
+sit above the rest: a classification is never promoted (likely pathogenic is not
+pathogenic), and an uncertainty the source left open stays open in plainer words. A
+caveat that vanishes because it was awkward to phrase reads as certainty the report did
+not have.
+
 **Length.** Aim for one screen per section and under 800 words for the whole family half.
 If a section needs more, it is usually carrying clinician content that belongs in the other
 register. Cut rather than compress — a shorter brief that gets read beats a complete one

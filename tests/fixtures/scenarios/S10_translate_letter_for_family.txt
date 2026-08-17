@@ -1,0 +1,23 @@
+Synthetic test document — fictional situation, generated for software testing. Not a real person.
+
+Message from a genetic counsellor
+---------------------------------
+
+I have written up the result letter for a family I am seeing on Thursday. The mother has
+told me more than once that the last letter from us "may as well have been in another
+language", and she is right — I read it back and it is not usable.
+
+Could you put the interpretation paragraph below into something I can actually give her?
+She reads English fine, this is not a language issue, it is that we write for each other
+and not for her. I will check whatever you produce against the record before it goes out.
+
+Interpretation paragraph as written:
+
+  Trio exome sequencing identified a heterozygous variant in ARID1B,
+  NM_020732.3:c.4318C>T p.(Arg1440Ter), absent from population databases and
+  confirmed de novo by segregation analysis. This nonsense variant is predicted to
+  result in a truncated transcript subject to nonsense-mediated decay, and
+  haploinsufficiency is the established disease mechanism for this gene. The variant
+  is classified as likely pathogenic (PVS1, PS2, PM2). Penetrance is considered high
+  though expressivity is variable. Correlation with the clinical phenotype is advised.
+  Secondary findings were not analysed at the family's request.

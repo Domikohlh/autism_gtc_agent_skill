@@ -7,7 +7,8 @@
       "find_by": "Present when the document is named precisely but the URL is not recorded. Search for the named document rather than guessing a link.",
       "establishes": "What the authority is being cited FOR. Never cite it for more than this.",
       "trigger_groups": "Every group must have at least one hit for the indication to match. Two groups means two independent features must both be present — 'autism' alone must not match the with-developmental-delay indication.",
-      "absent_triggers": "If any of these appear, the indication does NOT match. Absence of a phrase is not evidence that the feature is absent, so an indication matched this way is reported with that caveat rather than asserted."
+      "absent_triggers": "If any of these appear, the indication does NOT match. Absence of a phrase is not evidence that the feature is absent, so an indication matched this way is reported with that caveat rather than asserted.",
+      "reanalysable": "Whether the assay left data that can be re-examined. False means reanalysis is the wrong request and new testing is the right one — a distinction that decides whether an ask succeeds."
     }
   },
   "authorities": {
@@ -264,7 +265,9 @@
         "repeat expansions",
         "methylation abnormalities"
       ],
-      "note": "Misses almost everything relevant to a neurodevelopmental indication."
+      "note": "Misses almost everything relevant to a neurodevelopmental indication.",
+      "reanalysable": false,
+      "reanalysis_note": "Produces no sequence data, so there is nothing to reanalyse. The ask here is new testing, not reanalysis."
     },
     "fish": {
       "label": "FISH",
@@ -274,7 +277,9 @@
       "cannot_detect": [
         "anything not specifically asked for"
       ],
-      "note": "Targeted by design. A normal FISH says nothing about the rest of the genome."
+      "note": "Targeted by design. A normal FISH says nothing about the rest of the genome.",
+      "reanalysable": false,
+      "reanalysis_note": "Produces no sequence data, so there is nothing to reanalyse. The ask here is new testing, not reanalysis."
     },
     "microarray": {
       "label": "Chromosomal microarray (CMA)",
@@ -289,7 +294,9 @@
         "methylation abnormalities",
         "low-level mosaicism"
       ],
-      "note": "A normal microarray is not a completed genetic workup. This is the single most common gap in an autism or ID pathway."
+      "note": "A normal microarray is not a completed genetic workup. This is the single most common gap in an autism or ID pathway.",
+      "reanalysable": false,
+      "reanalysis_note": "Produces no sequence data, so there is nothing to reanalyse. The ask here is new testing, not reanalysis."
     },
     "panel": {
       "label": "Targeted gene panel",
@@ -302,7 +309,9 @@
         "most repeat expansions",
         "copy number depending on the pipeline"
       ],
-      "note": "Ask which panel and which version. Panels age badly, and the version date is the operative fact."
+      "note": "Ask which panel and which version. Panels age badly, and the version date is the operative fact.",
+      "reanalysable": true,
+      "reanalysis_note": "Leaves sequence data that can be re-examined against current knowledge without a new sample."
     },
     "exome": {
       "label": "Exome sequencing (ES)",
@@ -317,7 +326,9 @@
         "balanced rearrangements",
         "poorly covered regions"
       ],
-      "note": "Singleton exome without parental samples materially limits interpretation. Whether it was a trio matters."
+      "note": "Singleton exome without parental samples materially limits interpretation. Whether it was a trio matters.",
+      "reanalysable": true,
+      "reanalysis_note": "Leaves sequence data that can be re-examined against current knowledge without a new sample."
     },
     "genome": {
       "label": "Genome sequencing (GS)",
@@ -331,7 +342,9 @@
         "methylation abnormalities without a separate assay",
         "some complex structural variation"
       ],
-      "note": "Broadest short-read test, still not exhaustive."
+      "note": "Broadest short-read test, still not exhaustive.",
+      "reanalysable": true,
+      "reanalysis_note": "Leaves sequence data that can be re-examined against current knowledge without a new sample."
     },
     "fmr1_repeat": {
       "label": "FMR1 repeat sizing",
@@ -341,7 +354,9 @@
       "cannot_detect": [
         "anything other than FMR1"
       ],
-      "note": "A separate assay. Its absence from a workup is a gap in its own right, not a detail."
+      "note": "A separate assay. Its absence from a workup is a gap in its own right, not a detail.",
+      "reanalysable": false,
+      "reanalysis_note": "Produces no sequence data, so there is nothing to reanalyse. The ask here is new testing, not reanalysis."
     }
   }
 }

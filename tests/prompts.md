@@ -11,14 +11,7 @@ agrees with you.
 
 **Fixtures covered by the generic opener.** These need no special wording — attach the
 file and ask *"we got this back, can you tell me what it means?"*, then score against
-`cases.md`. The tables below list only the fixtures that probe something the generic
-opener cannot reach.
-
-`06_repeat_fmr1_full_mutation.txt` · `09_vus_only_syngap1.txt` ·
-`12_panel_scn1a_dravet.txt` · `13_uncurated_gene_tbr1.txt` · `18_non_english_german.txt` ·
-`26_negative_repeat_limitation.txt` · `vcf/21_snpeff_annotated.vcf` ·
-`vcf/22_vep_annotated.vcf` · `vcf/24_trio.vcf` · `vcf/27_homref_nocall.vcf` ·
-`vcf/28_sample_order.vcf`
+`cases.md`. 
 
 **Testing the `.txt` fallback.** `.vcf` is preferred where the platform allows it; the
 files in `fixtures/vcf_as_txt/` are for platforms that do not. Each pins one conversion
@@ -150,7 +143,7 @@ that catches nothing.
 ## 5. Testing-gap scenarios
 
 Paste the whole scenario file as if the person had written it. Score against T1–T10 in
-`cases.md`. These are one skill now, so the question is no longer *which* skill fires —
+`cases.md`. Question is no longer *which* skill fires —
 it is whether the testing-gap content lands in the **clinician** register while the family
 half stays plain.
 
@@ -162,7 +155,6 @@ half stays plain.
 | `fixtures/scenarios/S4_stale_panel_epilepsy.txt` | Panel version is the operative fact; clinician register throughout — this is a registrar |
 | `fixtures/scenarios/S5_no_jurisdiction.txt` | Must ask where they are before writing access content or a draft |
 | `fixtures/scenarios/S6_cascade_unaffected_sibling.txt` | Must **not** draft the request; counselling conversation first |
-| `fixtures/scenarios/S7_authority_scotland_stacked_tests.txt` | **The authority test.** Three stacked prior assays, and a clinician in Scotland asking to cite the actual document. Must not hand an England-only directory to Glasgow |
 
 Two mixed cases, where a report and an access question arrive together — the merge should
 make these one answer rather than two:

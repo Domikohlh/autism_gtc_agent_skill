@@ -13,6 +13,7 @@ Usage:
     python indication_lookup.py --features "autism, developmental delay"
     python indication_lookup.py --features "epilepsy" --had microarray
     python indication_lookup.py --had microarray --had panel
+    python indication_lookup.py --report-date "21 October 2019" --had exome --singleton
     python indication_lookup.py --list
 """
 
@@ -22,6 +23,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 INDEX_PATH = Path(__file__).resolve().parent.parent / "assets" / "indication_index.json"
@@ -175,6 +177,110 @@ def render_indication(index: dict, key: str, entry: dict, matched: list[str],
     return "\n".join(out)
 
 
+# Report dates arrive in whichever form the report used; parse_report.py emits
+# them verbatim. Only the year is relied on for elapsed time — a day/month
+# ambiguity in 03/04/2019 cannot move the answer by more than a few months, and
+# pretending to a precision the format does not carry would be worse.
+_MONTHS = {m: i for i, m in enumerate(
+    ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
+
+
+def parse_report_year(text: str) -> tuple[int | None, int | None, bool]:
+    """Return (year, month, ambiguous_day_month) from a report-date string."""
+    t = text.strip().lower()
+    m = re.match(r"^(\d{4})-(\d{2})-\d{2}$", t)
+    if m:
+        return int(m.group(1)), int(m.group(2)), False
+    m = re.match(r"^(\d{1,2})\s+([a-z]{3})[a-z]*\.?\s+(\d{4})$", t)
+    if m:
+        return int(m.group(3)), _MONTHS.get(m.group(2)), False
+    m = re.match(r"^([a-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})$", t)
+    if m:
+        return int(m.group(3)), _MONTHS.get(m.group(1)), False
+    m = re.match(r"^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$", t)
+    if m:
+        year = int(m.group(3))
+        year += 2000 if year < 100 else 0
+        a, b = int(m.group(1)), int(m.group(2))
+        # Ambiguous only when both halves could be a month.
+        return year, (b if a > 12 else None), a <= 12 and b <= 12
+    m = re.search(r"\b((?:19|20)\d{2})\b", t)
+    if m:
+        return int(m.group(1)), None, False
+    return None, None, False
+
+
+def render_reanalysis(index: dict, report_date: str, had: list[str],
+                      today_year: int, singleton: bool | None) -> str:
+    """
+    The case-level reanalysis picture: elapsed time, whether there is anything to
+    reanalyse, and what the prior assay left uncovered.
+
+    Deliberately says nothing about which genes were described since. That needs
+    a time-indexed discovery list this tool does not hold and must not invent —
+    and the argument does not depend on it. "A 2019 singleton exome, reanalysed
+    against current knowledge" is a complete request without naming a gene.
+    """
+    year, month, ambiguous = parse_report_year(report_date)
+    out = ["## Reanalysis assessment", ""]
+
+    if not year:
+        out.append(f"  Could not read a year from '{report_date}'. Elapsed time is the")
+        out.append("  whole argument here — establish the report date before proceeding.")
+        out.append("")
+        return "\n".join(out)
+
+    elapsed = today_year - year
+    out.append(f"  Report year: {year}   Elapsed: ~{elapsed} year(s)")
+    if ambiguous:
+        out.append("  (day/month order ambiguous in this format — year is what is relied on)")
+    out.append("")
+
+    if elapsed >= 2:
+        out.append("  Old enough that reanalysis is reasonable to raise. Nobody recalls")
+        out.append("  these families proactively; no system has that mechanism.")
+    else:
+        out.append("  Recent. Do NOT recommend reanalysis — it wastes a request and")
+        out.append("  undermines the rest of the ask.")
+    out.append("")
+
+    if not had:
+        out.append("  No prior assay given. Which test was done decides whether reanalysis")
+        out.append("  is even the right request — ask.")
+        out.append("")
+        return "\n".join(out)
+
+    out.append("### Is there anything to reanalyse?")
+    for key in had:
+        g = index["test_gaps"].get(key)
+        if not g:
+            out.append(f"  - {key}: not a curated test type")
+            continue
+        verdict = "YES" if g.get("reanalysable") else "NO"
+        out.append(f"  - {g['label']}: {verdict} — {g.get('reanalysis_note','')}")
+    out.append("")
+
+    if singleton is True:
+        out.append("### Family structure")
+        out.append("  Singleton. Adding parental samples is a distinct and often stronger")
+        out.append("  ask than reanalysis alone — it can resolve variants the original")
+        out.append("  analysis had to leave uncertain. Name it as its own option.")
+        out.append("")
+    elif singleton is False:
+        out.append("### Family structure")
+        out.append("  Trio already. Reanalysis is re-examination against current knowledge,")
+        out.append("  not a change in family structure.")
+        out.append("")
+
+    out.append("### What this assessment does NOT establish")
+    out.append("  Which genes have been described since. That needs a time-indexed")
+    out.append("  discovery list this tool does not hold, and must not be recited from")
+    out.append("  memory. The request does not need it: the case-level facts above —")
+    out.append("  date, assay, coverage, family structure — are the argument.")
+    out.append("")
+    return "\n".join(out)
+
+
 def render_gap(index: dict, key: str) -> str:
     g = index["test_gaps"].get(key)
     if not g:
@@ -200,6 +306,10 @@ def main() -> int:
     ap.add_argument("--features", help="Free text: the clinical picture, e.g. 'autism, epilepsy'")
     ap.add_argument("--had", action="append", default=[],
                     help="A test already performed (repeatable): microarray, panel, exome, genome, karyotype, fish, fmr1_repeat")
+    ap.add_argument("--report-date",
+                    help="Date on the prior report — enables the reanalysis assessment")
+    ap.add_argument("--singleton", action="store_true", help="Prior test was proband-only")
+    ap.add_argument("--trio", action="store_true", help="Prior test included both parents")
     ap.add_argument("--json", action="store_true", help="Emit raw JSON")
     ap.add_argument("--list", action="store_true", help="List everything curated")
     args = ap.parse_args()
@@ -218,9 +328,13 @@ def main() -> int:
             print(f"  {k:<34} {v.get('body','')} — {v.get('jurisdiction','')}")
         return 0
 
-    if not args.features and not args.had:
-        ap.error("provide --features, --had, or --list")
+    if not args.features and not args.had and not args.report_date:
+        ap.error("provide --features, --had, --report-date, or --list")
         return 2
+    if args.singleton and args.trio:
+        ap.error("--singleton and --trio are mutually exclusive")
+        return 2
+    singleton = True if args.singleton else False if args.trio else None
 
     hits = match_indications(index, args.features) if args.features else []
 
@@ -241,6 +355,10 @@ def main() -> int:
             print(f"No curated indication matched: {args.features}\n")
             print(NO_MATCH_GUIDANCE)
             print()
+
+    if args.report_date:
+        print(render_reanalysis(index, args.report_date, args.had,
+                                date.today().year, singleton))
 
     for had in args.had:
         print(render_gap(index, had))

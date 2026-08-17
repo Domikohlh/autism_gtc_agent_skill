@@ -90,15 +90,19 @@ CITATION_SHAPES = [
     (re.compile(r"\b(?:PMID|GeneReviews|ClinGen|ClinVar|OMIM|ACMG)\b"), "database or body named inline"),
 ]
 
-# Terms whose fix is deletion, not definition.
-JARGON = [
-    "haploinsufficiency", "haploinsufficient", "loss-of-function", "gain-of-function",
-    "missense", "nonsense variant", "frameshift", "truncating", "penetrance",
-    "expressivity", "zygosity", "heterozygous", "homozygous", "hemizygous",
-    "allele", "locus", "phenotype", "genotype", "proband", "segregation",
-    "in silico", "splice site", "transcript", "HGVS", "copy number variant",
-    "mosaicism", "nonsense-mediated decay", "cascade testing", "hypomorphic",
-]
+# The jargon list is the plain-language glossary — one source, so the check and
+# the translation cannot drift apart. Terms marked `keep` are excluded: a family
+# needs the name of their own test, and flagging it would be noise.
+def _load_jargon() -> list[str]:
+    path = Path(__file__).resolve().parent.parent / "assets" / "plain_language.json"
+    try:
+        terms = json.loads(path.read_text())["terms"]
+    except (OSError, ValueError, KeyError):
+        return []
+    return [t for t, e in terms.items() if not e.get("keep")]
+
+
+JARGON = _load_jargon()
 
 FAMILY_WORD_LIMIT = 800
 

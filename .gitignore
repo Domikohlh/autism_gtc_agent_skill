@@ -24,7 +24,13 @@ brief*.md
 # real goes in here — put working copies of real reports anywhere else, where the
 # rules above still apply.
 !tests/fixtures/
-!tests/fixtures/vcf/
 !tests/fixtures/*.txt
+!tests/fixtures/reports/
+!tests/fixtures/reports/*.txt
+!tests/fixtures/scenarios/
+!tests/fixtures/scenarios/*.txt
+!tests/fixtures/vcf/
 !tests/fixtures/vcf/*.vcf
 !tests/fixtures/vcf/*.txt
+!tests/fixtures/vcf_as_txt/
+!tests/fixtures/vcf_as_txt/*.txt

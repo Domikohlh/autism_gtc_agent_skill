@@ -1,4 +1,4 @@
-# Autism Gene-to-Care Navigator (v1)
+# Autism Gene-to-Care Navigator (v3)
 
 An agent skill that turns a genetic test report for autism or another neurodevelopmental
 condition into two things a person can actually use: a plain-language explanation, and
@@ -115,7 +115,7 @@ gene-to-care-navigator/
 │   ├── indication_lookup.py    # features + prior tests → gaps, indications, authorities
 │   └── render_brief.py         # findings → two-register brief
 ├── tests/                      # smoke_test.py · cases.md (rubric) · prompts.md
-│   └── fixtures/               #   40 synthetic reports, VCFs, scenarios, .txt conversions
+│   └── fixtures/               #   39 synthetic reports, VCFs, scenarios, .txt conversions
 └── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
@@ -362,7 +362,7 @@ python scripts/gene_lookup.py --list          # index integrity
 
 Testing splits into two layers, and only one can be automated.
 
-**Parser layer** — `smoke_test.py` runs 40 synthetic fixtures through `parse_report.py`
+**Parser layer** — `smoke_test.py` runs 39 synthetic fixtures through `parse_report.py`
 and asserts what came out. Expectations were recorded from verified runs rather than
 written from intent, so a failure means behaviour changed — read the diff before editing
 the expectation. It also cross-checks every planted identifier against *every* fixture's
@@ -427,14 +427,13 @@ step** — see [Data privacy](#data-privacy-and-confidentiality) first.
 ## Roadmap
 
 - **v1** — report translation + gene-to-care + risk layer
-- **v2** *(current)* — Testing gap: what the testing already done could not have found,
+- **v2** — Testing gap: what the testing already done could not have found,
   what further testing is guideline-indicated and by whose authority, and the wording to
   bring to a clinician or payer. Delivered as sections of the clinician register rather
   than as a separate skill. Targets the 11.3% directly.
-- **v3** — Reanalysis Advocate: which NDD genes were described since the report date, and
-  a drafted request to the clinical service.
-- **v4** — functional triage underneath: local SpliceAI/Pangolin, tissue-expression check
-  for whether blood RNA-seq would be informative, AlphaFold structural context.
+- **v3** *(current)* — Reanalysis Advocate: which NDD genes were described since the report date, and
+  a drafted request to the clinical service. And a translation for the technical users from their docs and results to non-technical audiences. Functional triage underneath: local SpliceAI/Pangolin, tissue-expression check for whether blood RNA-seq would be informative, AlphaFold structural context.
+- **v4** — Wrap up, Cost optimisation, latency reduction, Overlap review, README.md final update. 
 
 ---
 
