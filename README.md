@@ -1,4 +1,4 @@
-# Autism Gene-to-Care Navigator (v1)
+# Autism Gene-to-Care Navigator (v2)
 
 An agent skill that turns a genetic test report for autism or another neurodevelopmental
 condition into two things a person can actually use: a plain-language explanation, and
