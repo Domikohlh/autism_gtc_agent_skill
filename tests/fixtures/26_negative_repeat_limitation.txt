@@ -1,0 +1,31 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+This fixture keeps a limitations paragraph from manufacturing a finding. The limitations
+line near the end names, in the singular and inside a negation, a class of variant this
+assay cannot see. Read literally that was a result: it produced a phantom record, and
+because the record made the list non-empty it also suppressed the "nothing detected"
+warning — so a negative report came back with a fabricated finding and no warnings at
+all. The plural form escaped only because of a word boundary, which was luck rather than
+design. Nothing in this preamble uses the trigger wording, so that the document tests the
+guard rather than the preamble.
+
+Harborview Genomic Medicine
+CLINICAL EXOME SEQUENCING — REPORT
+
+Patient: Specimen, Testcase T          DOB: 16/04/2017
+MRN: 9902311
+Date of collection: 12 January 2026
+Date of report: 05 February 2026
+
+Reason for referral: Autism spectrum diagnosis, mild intellectual disability.
+
+Test performed: Whole exome sequencing, proband and both parents (trio).
+
+RESULT
+
+No pathogenic or likely pathogenic variants were identified in genes currently
+associated with the reported phenotype. This is a non-diagnostic result.
+
+Limitations: this assay does not detect repeat expansion, methylation abnormality,
+or deep intronic variation. Copy number changes below the resolution of the pipeline
+are not reported. Fragile X testing is a separate assay and was not requested.

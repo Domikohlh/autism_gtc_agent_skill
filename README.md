@@ -1,4 +1,4 @@
-# Autism Gene-to-Care Navigator
+# Autism Gene-to-Care Navigator (v1)
 
 An agent skill that turns a genetic test report for autism or another neurodevelopmental
 condition into two things a person can actually use: a plain-language explanation, and
@@ -10,26 +10,24 @@ the **published, actionable care implications** of what was found.
 
 Around **11.3%** of people evaluated for autism or a neurodevelopmental disorder receive
 guideline-concordant genetic testing ([Arcebido et al., *Autism*, 2025](https://journals.sagepub.com/doi/10.1177/13623613241289980),
-7,539 EHRs). ACMG has recommended exome/genome sequencing as first- or second-tier since
-2021. Nearly nine in ten eligible people never get it — and the barriers were insurance
-status and race, not clinical need.
+7,539 EHRs) — and the barriers were insurance status and race, not clinical need.
 
-Among those who *do* get tested, the published care implications of the result routinely
-never reach them. A child with a pathogenic `PTEN` variant needs thyroid surveillance
-from childhood. A `SCN2A` variant's direction of effect changes which seizure medication
-works — gain-of-function showed **94%** good-to-excellent phenytoin response,
-loss-of-function **0%** ([*Brain*, 2024](https://academic.oup.com/brain/article/147/8/2761/7656659)).
+Among those who *do* get tested, the published care implications routinely never reach
+them. A child with a pathogenic `PTEN` variant needs thyroid surveillance from childhood.
+A `SCN2A` variant's direction of effect changes which seizure medication works —
+gain-of-function showed **94%** good-to-excellent phenytoin response, loss-of-function
+**0%** ([*Brain*, 2024](https://academic.oup.com/brain/article/147/8/2761/7656659)).
 Families are told about the developmental gene and hear nothing about either.
 
-**This tool is addressing the delivery of information, not the methodology.** This skill is a delivery tool.
+**This tool is addressing the delivery of information, not the methodology.**
 
 ### What it is not
 
-It is *not* a diagnostic classifier, and it does *not* diagnose autism. *Please seek professionals if you have any concerns.* Autistic adults rank genetics research 23rd of 25 priorities and causation research dead last
-([Cage et al., *Autism*, 2024](https://journals.sagepub.com/doi/10.1177/13623613231222656)).
+It is *not* a diagnostic classifier, and it does *not* diagnose autism. *Please seek
+professionals if you have any concerns.* Autistic adults rank genetics research 23rd of 25
+priorities and causation research dead last ([Cage et al., *Autism*, 2024](https://journals.sagepub.com/doi/10.1177/13623613231222656)).
 The care implications handled here are **co-occurring medical conditions** — cancer risk,
-epilepsy, cardiac issues — not autism itself. That line is deliberate and the skill
-enforces it in its tone rules.
+epilepsy, cardiac issues — not autism itself. The skill enforces that line in its tone rules.
 
 ---
 
@@ -37,14 +35,13 @@ enforces it in its tone rules.
 
 > **Never recite medical specifics from memory.**
 
-Surveillance ages, screening intervals, imaging modalities, drug names and risk
-percentages drift between guideline versions. A thyroid ultrasound starting at age 7
-versus age 10 is the difference between useful and harmful — and a family *will* act on
-a number the tool gives them.
+Surveillance ages, intervals, modalities and risk percentages drift between guideline
+versions. A thyroid ultrasound starting at age 7 versus age 10 is the difference between
+useful and harmful — and a family *will* act on a number the tool gives them.
 
 So the curated index records **that** a protocol exists, **which** document holds it, and
-**which domains** it covers. It deliberately contains no ages, no intervals, no doses.
-The agent fetches the source and quotes it with a retrieval date. If it cannot reach the
+**which domains** it covers, and deliberately contains no ages, intervals or doses. The
+agent fetches the source and quotes it with a retrieval date. If it cannot reach the
 source, it names the document and stops.
 
 ---
@@ -53,47 +50,10 @@ source, it names the document and stops.
 
 ![Workflow](docs/workflow.png)
 
-<details>
-<summary>Mermaid source</summary>
+Mermaid source: [`docs/workflow.mmd`](docs/workflow.mmd)
 
-```mermaid
-flowchart TD
-  IN["INPUT<br/>report PDF · pasted text · VCF<br/>or gene symbol + clinical question"]
-  IN --> P1
-  P1["scripts/parse_report.py<br/>block-segmented field extraction<br/>identifiers redacted on the way out"]
-  R1["references/<br/>report_parsing.md"] -. governs .-> P1
-  P1 --> J1["findings JSON<br/>gene · transcript · HGVS · classification<br/>zygosity · inheritance · CNVs · repeat expansions<br/>test type · labelled report date · SF flag · warnings"]
-  J1 --> P2
-  P2["scripts/gene_lookup.py<br/>gene · syndrome name · cytoband"]
-  D1[("assets/gene_index.json<br/>27 genes · 5 CNV regions<br/>no ages · no doses")] --> P2
-  R2["references/<br/>gene_index.md"] -. governs .-> P2
-  P2 --> J2["syndrome · Tier 1 domains · Tier 2 domains<br/>SOURCES TO FETCH · traps · organisations"]
-  J2 --> FETCH
-  FETCH["FETCH the named sources<br/>read current specifics<br/>stamp a retrieval date"]
-  EXT["GeneReviews · ClinGen · ClinVar · OMIM<br/>named guidelines · Simons Searchlight<br/>ClinicalTrials.gov · patient orgs"] --> FETCH
-  FETCH --> RISK
-  RISK["RISK LAYER<br/>tier assignment"]
-  R3["references/<br/>risk_layer_policy.md"] -. governs .-> RISK
-  RISK --> VUS
-  VUS["VUS handling<br/>only when a VUS is present"]
-  R4["references/<br/>vus_communication.md"] -. governs .-> VUS
-  VUS --> STALE
-  STALE{"report older than ~2y<br/>and non-diagnostic?"}
-  STALE -- yes --> RE["add reanalysis prompt<br/>+ testing-gap note"]
-  STALE -- no --> P3
-  RE --> P3
-  P3["scripts/render_brief.py<br/>two registers · PHI check blocks the write"]
-  R5["references/<br/>output_templates.md"] -. governs .-> P3
-  P3 --> OUT["OUTPUT — brief.md<br/>family register + clinician register<br/>every clinical specific cited with a date"]
-```
-
-</details>
-
-### How the pieces interact
-
-The **scripts form the data spine**; the **reference files govern judgement** at each
-step. Scripts move and shape data. They never make a clinical call — that is what the
-reference files instruct the agent to do, and why they are prose rather than code.
+The **scripts form the data spine**; the **reference files govern judgement**. Scripts
+move and shape data — they never make a clinical call.
 
 | Step | Script | Governed by | Produces |
 |---|---|---|---|
@@ -130,7 +90,7 @@ Two gates sit in front of the tiering:
 - **Minors** → adult-onset information is withheld *unless there is action to take in
   childhood*. This is why PTEN and TSC surveillance still goes in: it starts in childhood.
 
-A VUS bypasses the risk layer entirely. A VUS carries no risk information, must not drive
+A VUS bypasses the risk layer entirely — it carries no risk information, must not drive
 surveillance, and must not drive cascade testing.
 
 ---
@@ -139,179 +99,92 @@ surveillance, and must not drive cascade testing.
 
 ```
 gene-to-care-navigator/
-├── SKILL.md                          # trigger description, workflow, guardrails, tone
-├── README.md
-├── LICENSE                           # Apache 2.0 — scripts/
-├── LICENSE-DOCS                      # CC BY 4.0 — prose and the index
-├── NOTICE                            # attribution and disclaimer
-├── assets/
-│   └── gene_index.json               # 27 genes + 5 CNV regions — routing only, no specifics
-├── references/
-│   ├── gene_index.md                 # curated gene notes, human-readable
-│   ├── risk_layer_policy.md          # three tiers, ACMG SF v3.3, paediatric rule
-│   ├── vus_communication.md          # why "uncertain" is not bad news
-│   ├── report_parsing.md             # test types and their blind spots
-│   └── output_templates.md           # family and clinician registers
+├── SKILL.md                    # trigger description, workflow, guardrails, tone
+├── LICENSE·LICENSE-DOCS·NOTICE # Apache 2.0 for code, CC BY 4.0 for content
+├── assets/gene_index.json      # 27 genes + 5 CNV regions — routing only, no specifics
+├── references/                 # the judgement layer, as prose the agent reads:
+│                               #   gene_index · risk_layer_policy · vus_communication
+│                               #   report_parsing · output_templates
 ├── scripts/
-│   ├── parse_report.py               # report → findings JSON, identifiers redacted
-│   ├── gene_lookup.py                # gene / syndrome / cytoband → sources, domains, traps
-│   └── render_brief.py               # findings → two-register brief
-├── tests/
-│   ├── cases.md                      # per-fixture rubric, skill-layer scoring
-│   ├── adversarial_prompts.md        # guardrail pressure tests
-│   ├── no_trigger_prompts.md         # must-not-fire and boundary cases
-│   ├── smoke_test.py                 # parser regression + identifier leak scan
-│   └── fixtures/                     # 25 synthetic reports and VCFs — no real data
-└── docs/
-    ├── workflow.png
-    └── risk_layer.png
+│   ├── phi.py                  # identifier ruleset, shared by the two below
+│   ├── parse_report.py         # report → findings JSON, identifiers redacted
+│   ├── gene_lookup.py          # gene / syndrome / cytoband → sources, domains, traps
+│   └── render_brief.py         # findings → two-register brief
+├── tests/                      # smoke_test.py · cases.md · prompts.md ·
+│   └── fixtures/               #   28 synthetic reports and VCFs — no real data
+└── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
 ---
 
 ## Requirements
 
-**Python 3.8+. No third-party packages required.**
+**Python 3.10+, standard library only.** PDF input optionally uses `pdfplumber`
+(`pip install -r requirements.txt`) and otherwise falls back to the `pdftotext` binary
+from poppler-utils.
 
-All three scripts run on the standard library alone. The only optional dependency is
-PDF text extraction, and even that has two routes:
-
-```bash
-pip install -r requirements.txt      # installs pdfplumber
-# or, instead:
-sudo apt install poppler-utils       # parse_report.py falls back to pdftotext
-```
-
-`parse_report.py` tries `pdfplumber` first, falls back to `pdftotext`, and on failure
-reports which routes it tried and what to do next — including an OCR pointer when a file
-opens but has no text layer, which is the usual shape of a scanned or photographed report.
-
-The scripts carry `from __future__ import annotations`, so modern type-hint syntax is
-never evaluated at runtime. That holds the floor at 3.8 rather than 3.10 — which matters,
-because clinical genetics services and HPC estates are conservative about Python versions
-and the interpreter should not be the reason a lab cannot run this.
-
-There is deliberately no HTTP client, LLM SDK, or bioinformatics stack here. The agent
-does retrieval through its own tooling; these scripts only parse, look up, and render.
-Code that touches health information is easier to audit when there is little to audit.
+There is deliberately no HTTP client, LLM SDK, or bioinformatics stack — the agent does
+retrieval through its own tooling. Code that touches health information is easier to audit
+when there is little to audit.
 
 ---
 
 ## Scripts
 
+Design rationale for each behaviour lives in the code comments, next to the code it
+explains. Run any script with `--help` for full usage.
+
 ### `parse_report.py`
 
-Extracts structured findings from a report. Handles PDF, plain text, and VCF, and covers
-sequence variants, copy-number findings, and repeat expansions.
+Extracts structured findings from a report — PDF, plain text, or VCF — covering sequence
+variants, copy-number findings, and repeat expansions.
 
 ```bash
 python scripts/parse_report.py report.pdf
 python scripts/parse_report.py report.txt --json findings_raw.json
-python scripts/parse_report.py annotated.vcf
+python scripts/parse_report.py annotated.vcf --sample proband
 python scripts/parse_report.py --text "NM_001040142.2(SCN2A):c.5645G>A (p.Arg1882Gln), heterozygous, pathogenic"
-python scripts/parse_report.py report.txt --no-redact    # synthetic reports only
 ```
 
-**Design note — block segmentation.** The first version used a fixed-width context window
-around each HGVS match and silently attributed the *previous* variant's classification and
-zygosity to the next one. That failure mode is worse than missing the field, because the
-output looks correct. The parser now segments the document into one block per variant
-(bounded by neighbouring HGVS matches), reads gene and transcript *backwards* from the
-variant, and classification, zygosity, inheritance and protein change *forwards*. Where a
-column layout puts classification or zygosity to the *left* of the variant, it falls back
-to the nearest preceding match and flags that it did so.
+It is deliberately conservative, and most of its design is about *not* asserting things
+the source did not say:
 
-**Design note — which date is the report date.** The first date on a report is almost
-always the date of birth, and taking it inverts the staleness judgement that drives the
-reanalysis recommendation. Dates are bucketed by the label in front of them: report-date
-labels are used, birth and collection dates are dropped as both wrong answers and
-identifiers, and an unlabelled guess is marked as one in `report_date_provenance`.
+- Documents are segmented into one block per variant, so a neighbouring variant's
+  classification cannot be attributed to this one.
+- The report date is chosen by the label in front of it. The first date on a report is
+  almost always the date of birth, and taking it inverts the staleness judgement.
+- Prose CNVs ("a 2.6 Mb deletion at 22q11.21") are read as well as ISCN, but `copies`
+  stays null and a region named only for contrast is not counted as a finding.
+- Repeat expansions are extracted separately, with sizes reported and never interpreted.
+  A limitations paragraph mentioning them does not become a result.
+- **A VCF is not a report.** It carries no interpretation, and says so in `warnings`.
+  Homozygous-reference rows are dropped — the sample does not carry those variants — a
+  no-call is flagged as establishing nothing, and the sample whose genotypes were read is
+  named, because a trio VCF is not reliably proband-first.
 
-**Design note — copy number in prose.** "A 2.6 Mb deletion at 22q11.21" is detected as
-well as ISCN notation, because that is how families and summary lines write it. `copies`
-stays null — prose does not distinguish a heterozygous from a homozygous loss — and what
-may sit between the band and the word "deletion" is a whitelist rather than a wildcard
-gap. A wildcard reads "a duplication at 16p11.2 and a deletion involving Xp22.31" as a
-16p11.2 deletion: a finding that does not exist, routed to genuine Tier 1 surveillance.
-
-**Repeat expansions** are extracted separately (`repeats`), with allele sizes reported and
-never interpreted — thresholds are gene- and assay-specific and belong to the reporting
-lab. This exists mostly for FMR1, where a repeat-only report would otherwise come back as
-"no variants detected".
-
-**A VCF is not a report.** Annotated VCFs (SnpEff `ANN`, VEP `CSQ`) yield gene, transcript
-and HGVS, `CLNSIG` yields a classification and `GT` yields zygosity — but classification,
-inheritance, phenotype and secondary-finding status live in the laboratory's report, and
-every VCF run says so in `warnings`.
-
-It is deliberately conservative throughout: it emits `needs_review` flags rather than
-asserting a guessed gene symbol, and `warnings` for a missing test type or report date.
-Identifiers are redacted from the emitted context by default — see
+Anything uncertain surfaces as `needs_review` on the record or `warnings` on the report.
+Identifiers are redacted before parsing begins — see
 [Data privacy](#data-privacy-and-confidentiality).
-
-<details>
-<summary>Example output</summary>
-
-```json
-{
-  "test_type": "exome",
-  "report_date": "12 March 2026",
-  "report_date_provenance": "labelled report-date field",
-  "secondary_findings_mentioned": true,
-  "variants": [
-    {
-      "gene": "PTEN", "transcript": "NM_000314.8",
-      "hgvs_c": "c.697C>T", "hgvs_p": "p.Arg233Ter",
-      "classification": "Pathogenic", "zygosity": "heterozygous",
-      "inheritance": "de novo", "needs_review": []
-    },
-    {
-      "gene": "CHD8", "transcript": "NM_001170629.2",
-      "hgvs_c": "c.4837A>G", "hgvs_p": "p.Ile1613Val",
-      "classification": "VUS", "zygosity": "heterozygous",
-      "inheritance": "maternal", "needs_review": []
-    }
-  ],
-  "cnvs": [],
-  "repeats": [],
-  "warnings": [
-    "Secondary/incidental findings referenced. Apply the secondary findings rules in references/risk_layer_policy.md — flag and route, do not counsel."
-  ]
-}
-```
-
-Each variant also carries `genomic` (populated from VCF input) and `raw_context`, and the
-record carries `candidate_dates`. Where a header had contained a date of birth, the
-warnings would additionally note that it was excluded as an identifier.
-
-</details>
 
 ### `gene_lookup.py`
 
-Routes a gene, syndrome name, or CNV region to its sources and care domains.
+Routes a gene, syndrome name, alias, or cytoband to its sources and care domains.
 
 ```bash
 python scripts/gene_lookup.py PTEN
-python scripts/gene_lookup.py TSC2                    # resolves alias → TSC1 entry
 python scripts/gene_lookup.py "Cowden syndrome"       # alias → PTEN
 python scripts/gene_lookup.py Rett                    # syndrome name → MECP2
 python scripts/gene_lookup.py 22q11.2                 # cytoband → CNV region
-python scripts/gene_lookup.py SCN2A --json
 python scripts/gene_lookup.py --cnv 22q11.2 --copies 1
 python scripts/gene_lookup.py --list
 ```
 
-- Returns syndrome, Tier 1 and Tier 2 domains, **sources to fetch**, gene-specific traps,
-and patient organisations. For an uncurated gene it returns a search order rather than
-nothing — because *"there is no published surveillance protocol for this gene"* is a
-useful answer families rarely get.
-
-- Lookups accept whichever word the person was actually given. A family arrives with
-"Rett" or "Cowden syndrome" at least as often as with MECP2 or PTEN, and falling through
-to "not in the curated index" for a syndrome that *is* curated is the worst kind of miss.
-CNV entries print their band and copy number in full (`Region: 16p11.2 · 3 copies —
-duplication`), because deletion and duplication of one band can have partly opposite
-phenotypes and that distinction must not depend on reading an entry key.
+Returns syndrome, Tier 1 and Tier 2 domains, **sources to fetch**, traps, and patient
+organisations. For an uncurated gene it returns a search order rather than nothing —
+*"there is no published surveillance protocol for this gene"* is a useful answer families
+rarely get. Lookups accept whichever word the person was given, since a family arrives
+with "Rett" at least as often as with MECP2. CNV entries print band and copy number in
+full, because deletion and duplication of one band can have partly opposite phenotypes.
 
 ### `render_brief.py`
 
@@ -322,12 +195,10 @@ python scripts/render_brief.py findings.json --out brief.md
 python scripts/render_brief.py findings.json --family-only
 ```
 
-Empty sections omit themselves — an empty "Surveillance" heading reading "none
-identified" is worse than no heading — and what remains is spaced so that omissions leave
-no trace. A regex PHI check looks for MRN, DOB, NHS number, SSN-shaped strings and lab
-accession numbers, and **refuses to write the file** if it finds any; `--allow-phi`
-overrides deliberately, and rendering to stdout warns without blocking. Writing the file
-is the step that makes a leak durable, so that is the step that stops.
+Empty sections omit themselves. The PHI check **refuses to write the file** if it finds an
+identifier — writing is the step that makes a leak durable, so that is the step that stops
+— with `--allow-phi` to override deliberately. It uses `scripts/phi.py`, the same ruleset
+the parser redacts with, so the two cannot drift apart.
 
 ---
 
@@ -356,64 +227,56 @@ territory — the clinician can independently review the basis for everything it
 A genetic test report is among the most sensitive documents a person will ever hold. It
 concerns a named individual, it is frequently about a child, and it carries information
 about relatives who never consented to anything. **The redaction in these scripts is a
-safety net, not permission.** Read this section before putting real clinical material
-through this skill.
+safety net, not permission.**
 
-### What the code actually does
+### What the code does
 
 | Where | What it does |
 |---|---|
-| `parse_report.py` | Redacts name, DOB, MRN, NHS number, SSN-shaped strings, lab accession and email from every emitted context, by default. `--no-redact` opts out and is for synthetic reports. |
-| `parse_report.py` | Drops dates labelled as birth or collection dates entirely — they are wrong answers *and* identifiers, so they are never surfaced as candidates. |
-| `render_brief.py` | Scans the assembled document for the same identifier shapes and **refuses to write the file** if it finds any, unless `--allow-phi` is passed. |
-| `.gitignore` | Excludes `*.vcf`, `reports/`, `patient_data/`, `findings*.json` and `brief*.md` so working files do not reach version control by accident. |
-| Everywhere | No network calls carry report content. The scripts read local files and write local files; the agent fetches *guideline sources*, never anything derived from the report. |
+| `phi.py` | The single identifier ruleset — name, DOB, record/hospital number, NHS number, SSN-shaped strings, lab accession, email — used by both scripts below, so they cannot drift apart. |
+| `parse_report.py` | Redacts every rule above from the whole document *before* parsing. `--no-redact` opts out and is for synthetic reports. |
+| `parse_report.py` | Drops dates labelled as birth or collection dates — wrong answers *and* identifiers. |
+| `render_brief.py` | Scans the assembled document with the same ruleset and refuses to write the file if it finds any identifier. |
+| `.gitignore` | Excludes `*.vcf`, `reports/`, `patient_data/`, `findings*.json`, `brief*.md`. |
+| Everywhere | No network calls carry report content. The agent fetches *guideline sources*, never anything derived from the report. |
 
-### What it does not do, and cannot
+### What it cannot do
 
 - **Regex redaction is pattern-matching, not comprehension.** It catches labelled
-  identifiers. It will miss a name written in running prose ("Jack's results show…"),
-  an unlabelled phone number or address, a referring clinician or hospital, an unusual
-  date format, a label in another language, and anything mangled by OCR.
-- **De-identification is not anonymisation.** This is the part that matters most and is
-  most often glossed over: a variant is itself identifying. Genomic data is
-  re-identifiable in principle, and removing every name and number from a report does not
-  make the sequence data anonymous. Under GDPR it remains personal data and special
-  category data (Art. 9); under HIPAA, genetic information is PHI and is explicitly
-  covered by GINA. Treat parser output as identifiable health data no matter how clean it
-  looks.
-- **It says nothing about where the text goes.** Running this skill means the report's
-  content enters the context of whatever model is running the agent, and may be
-  transmitted, logged, or retained under that provider's terms — not under this
-  repository's. **That is a disclosure, and it is your decision to make, not the tool's.**
-  Check it against your provider's data-processing terms before any real report goes in.
+  identifiers. It misses a name in running prose ("Jack's results show…"), an unlabelled
+  address, a referring clinician, an unusual date format, and anything mangled by OCR.
+- **De-identification is not anonymisation.** A variant is itself identifying. Genomic
+  data is re-identifiable in principle, and stripping every name and number does not make
+  it anonymous. Under GDPR it remains special category data (Art. 9); under HIPAA, genetic
+  information is PHI and is covered by GINA. Treat parser output as identifiable health
+  data however clean it looks.
+- **It says nothing about where the text goes.** Running this skill puts the report's
+  content into the context of whatever model runs the agent, under that provider's terms
+  rather than this repository's. **That is a disclosure, and it is your decision to make,
+  not the tool's.**
 
 ### If you are handling other people's reports
 
-- **Request for lawful consent when using real data**: patient consent or another Art. 6/Art. 9
-  basis under GDPR, a BAA under HIPAA, plus whatever your institution requires — a DPIA,
-  an IG review, an ethics approval for research use. A clinician's duty of confidence
-  applies to this tool exactly as it applies to any other disclosure.
-- **Work from a de-identified copy** wherever it is possible to make one. Redact before
-  the file reaches the parser rather than relying on the parser to redact after.
-- **A child's genetic data belongs to the child**, including the parts that will matter
-  to them as an adult. A parent can consent to processing today; that does not settle
-  what should be written down, retained, or shared later.
+- **Request for lawful consent when using real data**: patient consent or another
+  Art. 6/Art. 9 basis under GDPR, a BAA under HIPAA, plus whatever your institution
+  requires — DPIA, IG review, ethics approval. A clinician's duty of confidence applies
+  here exactly as it does to any other disclosure.
+- **Work from a de-identified copy** where one can be made. Redact before the file reaches
+  the parser rather than relying on the parser to redact after.
+- **A child's genetic data belongs to the child**, including the parts that will matter to
+  them as an adult. A parent can consent today; that does not settle what should be
+  written down, retained, or shared later.
 - **Do not de-identify by removing only what you can see.** Family structure, a rare
-  syndrome plus a location, or a distinctive variant can identify a person on their own.
-- **Delete intermediates.** `findings*.json` and `brief*.md` are ignored by git but they
-  still exist on disk, and they contain everything.
+  syndrome plus a location, or a distinctive variant can identify a person alone.
+- **Delete intermediates.** `findings*.json` and `brief*.md` are gitignored but still on
+  disk, and they contain everything.
 
-### If it is your own report, or your child's
+If it is **your own report or your child's**, it is yours to share — leave the redaction
+defaults on so identifiers don't reach a file you later hand to someone else. Everything
+above about where the text goes still applies.
 
-Then it is yours to share, and the practical advice is short: the redaction defaults are
-there to stop identifiers ending up in a file you later hand to someone else, and they
-are worth leaving on. Everything above about where the text goes still applies — the
-content reaches the model provider running the agent either way.
-
-**Nothing in this section is legal advice.** If real patient data is involved and you are
-not certain what applies to you, ask the person who is: your DPO, IG lead, privacy
-officer, or IRB.
+**Nothing here is legal advice.** If real patient data is involved and you are not certain
+what applies, ask your DPO, IG lead, privacy officer, or IRB.
 
 ---
 
@@ -428,26 +291,11 @@ exists — not to look comprehensive.
 - **Chromatin / scaffold** — MECP2, SHANK3, SYNGAP1, CHD8, ADNP, ARID1B, ANKRD11, DYRK1A, KMT2A, POGZ, MED13L
 - **Other** — FMR1, UBE3A, NRXN1, PPP2R5D, SETD5, AUTS2
 
-### Adding a gene
-
-Add an entry to `assets/gene_index.json`, then a matching prose section in
-`references/gene_index.md`:
-
-```json
-"GENE": {
-  "syndrome": "…",
-  "tier1_domains": ["…"],
-  "tier2_domains": ["…"],
-  "sources": [{"name": "…", "journal": "…", "year": 2025, "url": "…"}],
-  "traps": ["…"],
-  "organisations": [{"name": "…", "url": "…"}]
-}
-```
-
-Aliases use `{"GENE2": {"same_as": "GENE1"}}`.
-
-**Do not add ages, intervals, modalities, or doses.** If you find yourself wanting to,
-the right move is a better `sources` entry.
+**Adding a gene:** add an entry to `assets/gene_index.json` (`syndrome`, `tier1_domains`,
+`tier2_domains`, `sources`, `traps`, `organisations`; aliases use
+`{"GENE2": {"same_as": "GENE1"}}`), then a matching prose section in
+`references/gene_index.md`. **Do not add ages, intervals, modalities, or doses** — if you
+want to, the right move is a better `sources` entry.
 
 ---
 
@@ -458,53 +306,41 @@ python tests/smoke_test.py                    # parser regression + identifier l
 python scripts/gene_lookup.py --list          # index integrity
 ```
 
-Testing splits into two layers, and only one of them can be automated.
+Testing splits into two layers, and only one can be automated.
 
-**Parser layer** — `tests/smoke_test.py` runs 25 synthetic fixtures in `tests/fixtures/`
-through `parse_report.py` and asserts what came out: gene, classification, zygosity, the
-date it chose, CNV band and kind, repeat sizes, and which warnings fired. Expectations
-were recorded from verified runs rather than written from intent, so a failure means
-behaviour changed — read the diff before editing the expectation. It also runs a leak
-scan of every planted identifier against *every* fixture's output, because a per-fixture
-check passes by luck whenever the context window did not reach the header.
+**Parser layer** — `smoke_test.py` runs 28 synthetic fixtures through `parse_report.py`
+and asserts what came out. Expectations were recorded from verified runs rather than
+written from intent, so a failure means behaviour changed — read the diff before editing
+the expectation. It also cross-checks every planted identifier against *every* fixture's
+output, and refuses to pass unless each fixture carries a synthetic marker. The corpus
+spans the layouts, the clinical scenarios, the VCF variants, and the cases that must
+produce **nothing**; [`tests/cases.md`](tests/cases.md) lists what each one tests.
 
-The corpus covers the layouts (block, column, prose summary, results-page-only, clinic
-letter, German), the scenarios (Tier 1 tumour predisposition, recurrent CNVs, urgent
-cardiac and epilepsy findings, VUS-only, a VUS *in* a Tier 1 gene, secondary findings,
-repeat expansions, an uncurated gene, stale and recent negatives, mosaicism), the VCF
-variants (SnpEff, VEP, unannotated, trio), and the cases that must produce **nothing** —
-a reciprocal region named for contrast, two CNVs across a conjunction, a band in a
-coverage statement.
+**Skill layer** — [`tests/cases.md`](tests/cases.md) carries the per-fixture rubric,
+scored by hand because the failures that matter are judgement failures. Alongside it:
+[`prompts.md`](tests/prompts.md) (ready-to-paste),
+[`adversarial_prompts.md`](tests/adversarial_prompts.md) (guardrail pressure tests), and
+[`no_trigger_prompts.md`](tests/no_trigger_prompts.md) (must-not-fire cases).
 
-**Skill layer** — `tests/cases.md` carries the per-fixture rubric: what the parser must
-extract, and separately what the *brief* must do with it. That half is scored by hand,
-because the failures that matter are judgement failures. `tests/adversarial_prompts.md`
-pressure-tests the guardrails (risk numbers, PRS requests, prognosis, dosing, VUS
-pressure, embedded prompt injection); `tests/no_trigger_prompts.md` checks the skill does
-not fire on everything.
-
-Everything in `tests/fixtures/` is synthetic — invented patients, laboratories and record
-numbers. **No real patient report has been through this repository, and doing so is not a
-casual step** — see [Data privacy](#data-privacy-and-confidentiality) first.
+**No real patient report has been through this repository, and doing so is not a casual
+step** — see [Data privacy](#data-privacy-and-confidentiality) first.
 
 ---
 
 ## Limitations
 
 - **The gene index is a starting set**, not a reference database. Most NDD genes are not in it.
-- **The parser is regex-based.** It handles common report layouts; it will not handle every
-  lab's format. It flags rather than guesses, but check its output against the source.
-- **No OCR.** Photographed reports need OCR first, then character-by-character verification
-  of the variant string. OCR also defeats the identifier redaction, which matches labels
-  that OCR routinely mangles.
-- **Redaction is regex, and de-identified is not anonymous.** The parser strips labelled
-  identifiers, not every identifier, and genomic data is re-identifiable in principle
-  regardless. See [Data privacy and confidentiality](#data-privacy-and-confidentiality).
+- **The parser is regex-based.** It flags rather than guesses, but check its output
+  against the source; it will not handle every lab's format.
+- **No OCR.** Photographed reports need OCR first, then character-by-character
+  verification of the variant string. OCR also defeats identifier redaction.
+- **Redaction is regex, and de-identified is not anonymous.**
+  See [Data privacy](#data-privacy-and-confidentiality).
 - **Direction of effect is not inferred.** For SCN2A, SCN8A, GRIN2A/2B the skill states
-  that gain- versus loss-of-function is clinically decisive and routes it to genetics.
-  It does not guess, because guessing wrong inverts the treatment.
-- **Guideline currency depends on retrieval.** The index points at documents; if a
-  guideline is superseded, the pointer needs updating.
+  that gain- versus loss-of-function is decisive and routes it to genetics. Guessing wrong
+  inverts the treatment.
+- **Guideline currency depends on retrieval.** If a guideline is superseded, the pointer
+  needs updating.
 
 ---
 
@@ -533,39 +369,35 @@ casual step** — see [Data privacy](#data-privacy-and-confidentiality) first.
   picture, and the wording to bring to a clinician or insurer. Targets the 11.3% directly.
 - **v3** — Reanalysis Advocate: which NDD genes were described since the report date, and
   a drafted request to the clinical service.
-- **v4** — functional triage engine underneath: local SpliceAI/Pangolin, tissue-expression
-  check for whether blood RNA-seq would be informative, AlphaFold structural context. This
-  is infrastructure for "is this VUS actually actionable?", not a user-facing product.
+- **v4** — functional triage underneath: local SpliceAI/Pangolin, tissue-expression check
+  for whether blood RNA-seq would be informative, AlphaFold structural context.
 
 ---
 
 ## Licence
 
-This repository is dual-licensed, because most of it is content rather than code.
+Dual-licensed, because most of this repository is content rather than code.
 
 | Path | Licence |
 |---|---|
 | `scripts/` | [Apache License 2.0](LICENSE) |
 | `SKILL.md`, `README.md`, `references/`, `assets/gene_index.json`, `docs/` | [CC BY 4.0](LICENSE-DOCS) |
 
-**Why the split.** The three Python files are small; the substance of this project is
-curated prose and a curated dataset. Software licences apply awkwardly to both. CC BY 4.0
-also expressly covers *sui generis* database rights (Section 4 of its legal code), which
-matters for `gene_index.json` in the UK, EU, and other jurisdictions that treat database
-rights separately from copyright — a permissive software licence alone would leave that
-unclear. The index is meant to be reused and extended, so that gap is worth closing.
+**Why the split.** The Python files are small; the substance here is curated prose and a
+curated dataset. CC BY 4.0 expressly covers *sui generis* database rights (§4 of its legal
+code), which matters for `gene_index.json` in jurisdictions that treat database rights
+separately from copyright.
 
-**If you modify the clinical content**, Apache 2.0 §4(b) requires you to state that files
-were changed. Where those files are `references/risk_layer_policy.md` or
-`references/vus_communication.md`, please make it prominent — they encode the guardrails,
-and downstream users need to know they are not running the reviewed version.
+**If you modify the clinical content**, CC BY 4.0 §3(a)(1)(B) requires you to indicate
+that you changed it. For `references/risk_layer_policy.md` and
+`references/vus_communication.md`, make it prominent — they encode the guardrails, and
+downstream users need to know they are not running the reviewed version.
 
-**Third-party content.** This repository reproduces no text from clinical guidelines,
-GeneReviews, or other copyrighted clinical sources. The gene index records factual
-identifiers only — gene symbols, syndrome names, care-domain labels, citations, URLs — and
-excludes screening ages, intervals, modalities, and doses by design. That exclusion exists
-for clinical safety, and has the useful side effect of keeping the repository clear of
-third-party copyright. Please preserve it: don't paste surveillance tables in.
+**Third-party content.** No text from clinical guidelines, GeneReviews, or other
+copyrighted sources is reproduced here. The gene index records factual identifiers only —
+symbols, syndrome names, care-domain labels, citations, URLs — and excludes screening
+ages, intervals, modalities and doses by design. That exclusion exists for clinical safety
+and keeps the repository clear of third-party copyright. Please preserve it.
 
 See [`NOTICE`](NOTICE) for attribution requirements and the full disclaimer.
 
@@ -575,10 +407,9 @@ See [`NOTICE`](NOTICE) for attribution requirements and the full disclaimer.
 
 This software summarises published information. **It is not a medical device, does not
 provide medical advice, and does not make diagnoses.** Output is intended to support
-conversations with qualified clinicians, not replace them. Every clinical decision
-belongs to the person's clinical team.
+conversations with qualified clinicians, not replace them. Every clinical decision belongs
+to the person's clinical team.
 
-The warranty disclaimers and liability limitations in the Apache License 2.0 and CC BY 4.0
-concern the software and content as such. They are not protection against harms arising
-from clinical use, and should not be relied on as such. Anyone deploying this in or near a
-clinical setting should obtain independent legal and regulatory advice.
+The warranty disclaimers in Apache 2.0 and CC BY 4.0 concern the software and content as
+such. They are not protection against harms arising from clinical use. Anyone deploying
+this in or near a clinical setting should obtain independent legal and regulatory advice.

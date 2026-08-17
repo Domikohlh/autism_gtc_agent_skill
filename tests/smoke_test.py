@@ -16,6 +16,8 @@ Usage:
     python tests/smoke_test.py -v        # print every extracted record
 """
 
+from __future__ import annotations
+
 import json
 import subprocess
 import sys
@@ -157,9 +159,44 @@ EXPECTED: dict[str, dict] = {
     },
     "vcf/24_trio.vcf": {
         "genes": ["PTEN", "ARID1B"],
-        "must_flag": ["Input was a VCF"],
+        "must_flag": ["Input was a VCF", "3 samples"],
+    },
+    "26_negative_repeat_limitation.txt": {
+        # "repeat expansion", singular, inside a negation in the limitations
+        # paragraph. Must NOT become a repeat record, and the negative report
+        # must keep its "nothing detected" warning.
+        "date": "05 February 2026", "test_type": "exome",
+        "genes": [], "cnvs": [], "repeats": [],
+        "must_flag": ["No variants, CNVs or repeat expansions detected"],
+        "must_not_contain": ["9902311", "16/04/2017"],
+    },
+    "vcf/27_homref_nocall.vcf": {
+        # 0/0 and 0|0 rows are not findings; ./. is kept but flagged.
+        "genes": ["SCN2A", "CHD8"],
+        "zygosities": [None, "heterozygous"],
+        "must_flag": ["2 record(s) were homozygous reference"],
+    },
+    "vcf/28_sample_order.vcf": {
+        # Proband is the THIRD sample. Default reads the first and says so.
+        "genes": ["SHANK3"],
+        "zygosities": ["heterozygous"],
+        "must_flag": ["Genotypes were read from 'mother'", "3 samples"],
     },
 }
+
+# Fixtures parsed with a non-default sample selection.
+SAMPLE_EXPECTED: dict[str, dict] = {
+    "vcf/28_sample_order.vcf": {
+        "sample": "proband",
+        "genes": ["PTEN", "SHANK3"],
+        "zygosities": ["heterozygous", "homozygous"],
+    },
+}
+
+# Every fixture must carry a marker identifying it as synthetic. This is the
+# check that actually catches a real report dropped into the corpus — .gitignore
+# can only stop git from committing one, and only by extension.
+SYNTHETIC_MARKERS = ("Synthetic test document", "SyntheticTestFixture_NotRealPatientData")
 
 
 # Every identifier planted anywhere in the corpus, checked against EVERY
@@ -185,6 +222,7 @@ CORPUS_IDENTIFIERS = [
     "7712008", "21/09/2021",
     "2280551", "05/11/2023",
     "4419902", "13/01/2020",
+    "9902311", "16/04/2017",
     "Testcase",
 ]
 
@@ -194,16 +232,16 @@ CORPUS_IDENTIFIERS = [
 LEAK_SCAN_EXEMPT = {"17_name_in_prose.txt"}
 
 
-def parse(path: Path) -> dict:
-    out = subprocess.run(
-        [sys.executable, str(PARSER), str(path)],
-        capture_output=True, text=True, check=True,
-    )
+def parse(path: Path, sample: str | None = None) -> dict:
+    cmd = [sys.executable, str(PARSER), str(path)]
+    if sample:
+        cmd += ["--sample", sample]
+    out = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return json.loads(out.stdout)
 
 
 def check(name: str, spec: dict, verbose: bool) -> list[str]:
-    record = parse(FIXTURES / name)
+    record = parse(FIXTURES / name, sample=spec.get("sample"))
     blob = json.dumps(record)
     failures: list[str] = []
 
@@ -255,6 +293,27 @@ def leak_scan() -> list[str]:
     return failures
 
 
+def corpus_is_synthetic() -> list[str]:
+    """
+    Every fixture must announce itself as synthetic.
+
+    This is the check that catches a real report placed in the corpus. The
+    .gitignore rules can only stop git from committing one, and only by
+    extension; nothing there can tell a synthetic report from a real one.
+    """
+    failures = []
+    for path in sorted(FIXTURES.rglob("*")):
+        if not path.is_file() or path.name.startswith("."):
+            continue
+        head = path.read_text(errors="replace")[:2000]
+        if not any(marker in head for marker in SYNTHETIC_MARKERS):
+            failures.append(
+                f"{path.relative_to(FIXTURES)}: no synthetic marker in the first 2000 "
+                "characters. If this is a real report it must not be here."
+            )
+    return failures
+
+
 def main() -> int:
     verbose = "-v" in sys.argv
     failed = 0
@@ -268,8 +327,19 @@ def main() -> int:
         else:
             print(f"ok    {name}")
 
-    total = len(EXPECTED)
-    print(f"\n{total - failed}/{total} fixtures passed")
+    for name, spec in SAMPLE_EXPECTED.items():
+        label = f"{name} --sample {spec['sample']}"
+        failures = check(name, spec, verbose)
+        if failures:
+            failed += 1
+            print(f"FAIL  {label}")
+            for f in failures:
+                print(f"        {f}")
+        else:
+            print(f"ok    {label}")
+
+    total = len(EXPECTED) + len(SAMPLE_EXPECTED)
+    print(f"\n{total - failed}/{total} checks passed")
 
     print("\nIdentifier leak scan (all identifiers × all fixtures):")
     leaks = leak_scan()
@@ -277,10 +347,16 @@ def main() -> int:
         print(f"  LEAK  {leak}")
     print(f"  {'no leaks' if not leaks else str(len(leaks)) + ' LEAKS — fix before shipping'}")
 
+    print("\nSynthetic-corpus check:")
+    unmarked = corpus_is_synthetic()
+    for u in unmarked:
+        print(f"  UNMARKED  {u}")
+    print(f"  {'all fixtures marked synthetic' if not unmarked else 'UNMARKED FILES PRESENT'}")
+
     if failed:
         print("\nA failure means the parser changed. Read the diff before editing "
               "expectations — the fixture may be right and the parser wrong.")
-    return 1 if (failed or leaks) else 0
+    return 1 if (failed or leaks or unmarked) else 0
 
 
 if __name__ == "__main__":

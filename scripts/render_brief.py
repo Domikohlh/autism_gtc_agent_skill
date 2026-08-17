@@ -45,9 +45,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
+
+try:
+    from phi import find_identifiers
+except ImportError:  # imported as a module from outside scripts/
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from phi import find_identifiers
 
 LIMITS_BLOCK = (
     "> **What this document is and isn't.** This summarises published information "
@@ -55,18 +60,17 @@ LIMITS_BLOCK = (
     "a prediction. Every decision belongs with the clinical team — bring this to them."
 )
 
-# Patterns that suggest identifiable data leaked into the output.
-PHI_PATTERNS = [
-    (re.compile(r"\bMRN[:\s#]*\d+", re.I), "medical record number"),
-    (re.compile(r"\bDOB[:\s]*\d", re.I), "date of birth"),
-    (re.compile(r"\bNHS\s*(?:no\.?|number)[:\s]*\d", re.I), "NHS number"),
-    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "possible SSN"),
-    (re.compile(r"\baccession[:\s#]*\w{4,}", re.I), "lab accession number"),
-]
-
 
 def check_deidentified(text: str) -> list[str]:
-    return [label for pattern, label in PHI_PATTERNS if pattern.search(text)]
+    """
+    Identifier shapes still present in the assembled document.
+
+    Uses the same ruleset as the parser (phi.py). This check used to keep its own
+    shorter list, which meant a brief carrying a date of birth, a hospital
+    number, a lab email and a specimen ID passed untouched — the script writing
+    the document handed to a clinic had the weakest check in the repository.
+    """
+    return find_identifiers(text)
 
 
 def section(title: str, body: str | None, level: int = 2) -> str:

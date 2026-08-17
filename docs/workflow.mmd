@@ -1,0 +1,28 @@
+flowchart TD
+  IN["INPUT<br/>report PDF · pasted text · VCF<br/>or gene symbol + clinical question"]
+  IN --> P1
+  P1["scripts/parse_report.py<br/>block-segmented field extraction<br/>identifiers redacted on the way in"]
+  R1["references/<br/>report_parsing.md"] -. governs .-> P1
+  P1 --> J1["findings JSON<br/>gene · transcript · HGVS · classification<br/>zygosity · inheritance · CNVs · repeat expansions<br/>test type · labelled report date · SF flag · warnings"]
+  J1 --> P2
+  P2["scripts/gene_lookup.py<br/>gene · syndrome name · cytoband"]
+  D1[("assets/gene_index.json<br/>27 genes · 5 CNV regions<br/>no ages · no doses")] --> P2
+  R2["references/<br/>gene_index.md"] -. governs .-> P2
+  P2 --> J2["syndrome · Tier 1 domains · Tier 2 domains<br/>SOURCES TO FETCH · traps · organisations"]
+  J2 --> FETCH
+  FETCH["FETCH the named sources<br/>read current specifics<br/>stamp a retrieval date"]
+  EXT["GeneReviews · ClinGen · ClinVar · OMIM<br/>named guidelines · Simons Searchlight<br/>ClinicalTrials.gov · patient orgs"] --> FETCH
+  FETCH --> RISK
+  RISK["RISK LAYER<br/>tier assignment"]
+  R3["references/<br/>risk_layer_policy.md"] -. governs .-> RISK
+  RISK --> VUS
+  VUS["VUS handling<br/>only when a VUS is present"]
+  R4["references/<br/>vus_communication.md"] -. governs .-> VUS
+  VUS --> STALE
+  STALE{"report older than ~2y<br/>and non-diagnostic?"}
+  STALE -- yes --> RE["add reanalysis prompt<br/>+ testing-gap note"]
+  STALE -- no --> P3
+  RE --> P3
+  P3["scripts/render_brief.py<br/>two registers · PHI check blocks the write"]
+  R5["references/<br/>output_templates.md"] -. governs .-> P3
+  P3 --> OUT["OUTPUT — brief.md<br/>family register + clinician register<br/>every clinical specific cited with a date"]

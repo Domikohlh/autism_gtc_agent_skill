@@ -20,4 +20,7 @@ brief*.md
 # because every patient, laboratory and record number in it is invented. Nothing
 # real goes in here — put working copies of real reports anywhere else, where the
 # rules above still apply.
-!tests/fixtures/**
+!tests/fixtures/
+!tests/fixtures/vcf/
+!tests/fixtures/*.txt
+!tests/fixtures/vcf/*.vcf
