@@ -117,6 +117,7 @@ agree on what the chart is for.
 | `risk_panel` finding with a VUS classification | Tab is kept and states why it is empty; the sibling pathogenic finding still renders |
 | `surveillance_tier: "Tier III (Low Risk)"` | Refused and dropped — the slot carries evidence tiers 1/2/3, not an actionability or risk verdict |
 | Any panel output | Contains no `<script>` tag |
+| Any panel output | Ideogram captioned with gene, chromosome and band; no decorative geometry; figures in a two-column table |
 
 ## Testing-gap checks
 

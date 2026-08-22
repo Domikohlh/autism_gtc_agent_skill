@@ -428,6 +428,14 @@ Putting the two cohorts one click apart is also the most useful thing the panel 
 many genes the clinic-based and population-based penetrance differ enormously, and that
 gap is the single largest caveat on any figure shown.
 
+**Reading the chart.** The ideogram is captioned with the gene, the chromosome and the
+band — the three identifiers a reader needs off that axis. It is a schematic: the band is
+placed by arm and number, which makes the *order* of two bands on one arm real and the
+exact position not, and that is said once in the caption under the chart rather than as a
+label competing with the identifiers. Figures are listed beneath as a **two-column table**,
+condition and figure on the left, cohort and citation on the right — running them together
+as prose made the cohort, which is what decides the number's meaning, read as an aside.
+
 `surveillance_tier` accepts **1, 2 or 3 only** — the evidence tiers from the risk layer.
 An actionability rating such as "Tier III (Low Risk)" is refused and dropped: whether a
 finding is low risk is a clinical judgement this tool does not make. Each finding is gated

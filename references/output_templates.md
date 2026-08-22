@@ -211,6 +211,7 @@ the page opens offline, prints, and survives being emailed.
 ```json
 "risk_panel": {"findings": [{
   "label": "BRCA1 c.190T>C",
+  "gene": "BRCA1",
   "locus": "17q21.31",
   "classification": "Pathogenic",
   "provenance": {"stars": 2, "submitters": 4, "conflicts": false,
@@ -224,7 +225,8 @@ the page opens offline, prints, and survives being emailed.
 | Field | Meaning |
 |---|---|
 | `label` | What the tab says. The gene and variant as the report writes them |
-| `locus` | Cytoband, for the schematic ideogram. Schematic only — no coordinate is claimed |
+| `gene` | Captions the ideogram with the gene symbol. Defaults to the first token of `label`, which is the gene in every shape a report writes it |
+| `locus` | Cytoband. Captions the ideogram with the chromosome and band, and places the highlight. Schematic only — the band is positioned by arm and number, and no coordinate is claimed |
 | `classification` | The reporting laboratory's call. Gates this finding's figures |
 | `provenance` | What you retrieved at Step 2b. Whatever is missing is simply absent — padding it out defeats the point of the slot |
 | `surveillance_tier` | 1, 2 or 3. The evidence tier, never an actionability rating |
@@ -236,3 +238,10 @@ both shapes take the same code path and cannot disagree about a variant.
 Each finding is gated separately, and **a refused finding keeps its tab** — a tab saying
 why a VUS has no figure is more use than a finding quietly missing from the selector.
 
+The ideogram is captioned with the gene, the chromosome and the band — the three
+identifiers a reader needs off that axis. That the drawing is not to scale is said once,
+in the caption under the chart, rather than as a label competing with them.
+
+Figures are listed beneath the chart as a two-column table: the condition and its figure
+on the left, the cohort and citation on the right. Running them together as prose made the
+cohort — the part that decides what the number means — read as an aside.
