@@ -14,8 +14,8 @@ the **published, actionable care implications** of what was found.
 python scripts/bundle_skill.py
 ```
 
-That writes two things into `dist/` — a folder and a `.zip` of it. **Upload one of those,
-not the repository**, which carries a test corpus, diagrams and git history the skill does
+That writes two things into `dist/` — a folder and a `.zip` of it. 
+**Upload one of those, not the repository**, which carries a test corpus, diagrams and git history the skill does
 not need (300 KB against 5 MB). If a folder upload fails, upload the `.zip`; see
 [Packaging for upload](#packaging-for-upload). Nothing to install: there are no
 dependencies.
@@ -185,8 +185,7 @@ gene-to-care-navigator/
 
 ## Requirements
 
-**Python 3.10+ and nothing else.** No dependencies, no install step — the scripts use the
-standard library only.
+**No dependencies, no install step — the scripts use the standard library only.**
 
 No HTTP client, no LLM SDK, no bioinformatics stack, no PDF extractor. The agent reads
 documents and does retrieval through its own tooling; nothing here computes a clinical
