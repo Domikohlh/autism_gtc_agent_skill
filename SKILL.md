@@ -1,6 +1,6 @@
 ---
 name: gene-to-care-navigator
-description: Translates a genetic test report — for any inherited or genomic condition, including neurodevelopmental conditions, cancer predisposition, chromosomal syndromes such as Down syndrome, cardiac, metabolic and rare disease — into a plain-language explanation plus the published, actionable care implications of what was found: surveillance protocols, medication considerations, patient organisations and registries. Use whenever someone shares or describes a genetics report, microarray, exome, genome, karyotype or gene panel result, or names a gene or chromosomal finding (PTEN, BRCA1/2, MLH1, SCN2A, MECP2, TSC1/2, trisomy 21, 22q11.2, FMR1 and any other) with a clinical question; asks what a variant or result means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a finding carries risk of cancer, epilepsy, heart problems or other future conditions. Use also when a clinician, clinical scientist or genetic counsellor asks for a technical document, report paragraph or letter to be put into plain language for a patient and family. Also use for negative or non-diagnostic reports, where the answer is what to do next — including what the testing already done could not have found, what further testing is guideline-indicated, and the wording to take to a clinician, a genetics service or a payer. Trigger even without the word "genetics" — a pasted variant string or a gene symbol with a clinical question both count.
+description: Translates any genetic or genomic test report into plain language plus the published care implications: surveillance protocols, medication considerations, patient organisations, registries. Use when someone shares or describes a genetics report, microarray, exome, genome, karyotype or gene panel result, or names a gene or chromosomal finding (PTEN, BRCA1/2, trisomy 21, 22q11.2, FMR1) with a clinical question; asks what a variant means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a finding carries risk of cancer, epilepsy or heart conditions. Also use when a clinician or counsellor wants a report put into plain language for a family, and for negative or non-diagnostic results, where the answer is what the testing missed, what further testing is indicated, and the wording to take to a clinician or payer. A pasted variant string or gene symbol with a clinical question counts, even without the word genetics.
 ---
 
 # Gene-to-Care Navigator
@@ -336,27 +336,16 @@ an appropriately qualified clinician.
 ### The interactive panel
 
 For several findings in one report, or two cohorts for one condition, pass `risk_panel`
-instead of the flat list. The HTML then carries profile tabs and a cohort-basis toggle,
-built from radio inputs and CSS — **still no scripts**, so the page opens offline, prints
-and survives being emailed.
+instead of the flat list: the clinician page then carries profile tabs and a cohort-basis
+toggle, built from radio inputs and CSS so there are **still no scripts**. The field shape
+is in `references/output_templates.md`.
 
-```json
-"risk_panel": {"findings": [{
-  "label": "BRCA1 c.190T>C", "locus": "17q21.31", "classification": "Pathogenic",
-  "provenance": {"stars": 2, "submitters": 4, "conflicts": false,
-                 "last_evaluated": "2026-05-14"},
-  "surveillance_tier": 1,
-  "figures": [{"...": "...", "basis": "clinic"}, {"...": "...", "basis": "population"}]
-}]}
-```
-
-**Nothing in the panel is computed, and this is the point of its design.** Where a variant
-browser would put a calculated risk score, this puts `provenance` — the ClinVar review
-status, submitter count and last-evaluated date you retrieved at Step 2b. Where one would
-put a penetrance dial, this puts the **cohort-basis toggle**: it switches between two
-*published* figures, so the clinic-ascertained and population-based numbers for the same
-condition sit one click apart. That contrast is the most useful thing a clinician gets
-from a penetrance figure, and it is the reason the control exists.
+**Nothing in the panel is computed, and that is the point of its design.** Where a variant
+browser would put a calculated risk score, this puts the ClinVar provenance you retrieved
+at Step 2b. Where one would put a penetrance dial, this puts a **cohort-basis toggle** that
+switches between two *published* figures — so the clinic-ascertained and population-based
+numbers for one condition sit a click apart. That contrast is the most useful thing a
+clinician gets from a penetrance figure, and it is why the control exists.
 
 **Never add a score slot or a parameter slider.** A control that changes what a number
 works out to is a risk calculator on an individual, whatever it is labelled.
@@ -366,12 +355,9 @@ works out to is a risk calculator on an individual, whatever it is labelled.
 verdict: "Tier III (Low Risk)" is refused and dropped, because whether a finding is low
 risk is a clinical judgement this skill does not make (guardrail 9).
 
-Each finding is gated separately, and **a refused finding keeps its tab** — a tab saying
-why a VUS has no figure is more use than a finding quietly missing from the selector.
-
-**Polygenic risk scores remain excluded entirely** — Tier 3 in
-`references/risk_layer_policy.md`, population-level instruments with discrimination far
-below usefulness for one person. They must never reach the chart under any framing.
+**Polygenic risk scores remain excluded entirely** — Tier 3, population-level instruments
+with discrimination far below usefulness for one person. They never reach the chart under
+any framing.
 
 ## Translating a technical document for a family
 

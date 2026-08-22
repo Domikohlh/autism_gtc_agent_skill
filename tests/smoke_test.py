@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -560,6 +561,59 @@ def check_panel() -> list[str]:
     return failures
 
 
+# SKILL.md frontmatter must satisfy the platform's upload rules. These are hard
+# limits, not style: a description one character over 1024 is rejected at upload
+# with nothing in the repository looking wrong, which is exactly the kind of
+# failure that costs an afternoon. The body-length rule is Anthropic's stated
+# guidance rather than a hard cap, so it is reported as a warning, not a failure.
+FRONTMATTER_LIMITS = {"name": 64, "description": 1024}
+SKILL_BODY_GUIDANCE = 500
+
+
+def check_skill_frontmatter() -> tuple[list[str], list[str]]:
+    """Returns (failures, warnings) for SKILL.md's YAML frontmatter."""
+    path = ROOT / "SKILL.md"
+    text = path.read_text()
+    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.S)
+    if not m:
+        return ["SKILL.md has no YAML frontmatter block"], []
+
+    front, body = m.group(1), m.group(2)
+    failures, warnings = [], []
+
+    fields = {}
+    for key in FRONTMATTER_LIMITS:
+        km = re.search(rf"^{key}:\s*(.*?)(?=\n[a-zA-Z-]+:|\Z)", front, re.S | re.M)
+        if not km or not km.group(1).strip():
+            failures.append(f"frontmatter is missing a non-empty '{key}'")
+        else:
+            fields[key] = km.group(1).strip()
+
+    for key, limit in FRONTMATTER_LIMITS.items():
+        value = fields.get(key)
+        if value and len(value) > limit:
+            failures.append(
+                f"{key} is {len(value)} characters, over the {limit} limit by "
+                f"{len(value) - limit} — the skill will be rejected at upload"
+            )
+        if value and ("<" in value or ">" in value):
+            failures.append(f"{key} contains an angle bracket; XML tags are rejected")
+
+    name = fields.get("name", "")
+    if name and not re.fullmatch(r"[a-z0-9-]+", name):
+        failures.append(f"name {name!r} must be lowercase letters, numbers and hyphens only")
+    if re.search(r"anthropic|claude", name, re.I):
+        failures.append(f"name {name!r} contains a reserved word")
+
+    lines = len(body.splitlines())
+    if lines > SKILL_BODY_GUIDANCE:
+        warnings.append(
+            f"SKILL.md body is {lines} lines; Anthropic's guidance is under "
+            f"{SKILL_BODY_GUIDANCE}. Not an upload blocker — move detail into references/"
+        )
+    return failures, warnings
+
+
 def check_risk_figures() -> list[str]:
     """Assert the chart gates. Failures here are the dangerous kind."""
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -640,6 +694,15 @@ def main() -> int:
         print(f"  FAIL  {f}")
     print(f"  {len(INDICATION_EXPECTED) - len(indication_failures)}/{len(INDICATION_EXPECTED)} pictures routed correctly")
 
+    print("\nSKILL.md frontmatter (upload limits):")
+    frontmatter_failures, frontmatter_warnings = check_skill_frontmatter()
+    for f in frontmatter_failures:
+        print(f"  FAIL  {f}")
+    for w in frontmatter_warnings:
+        print(f"  warn  {w}")
+    if not frontmatter_failures:
+        print("  within name/description limits")
+
     print("\nRisk-figure gates (render_brief.py):")
     figure_failures = check_risk_figures()
     for f in figure_failures:
@@ -664,7 +727,7 @@ def main() -> int:
         print("\nA failure means the parser changed. Read the diff before editing "
               "expectations — the fixture may be right and the parser wrong.")
     return 1 if (failed or leaks or unmarked or indication_failures
-                 or figure_failures or panel_failures) else 0
+                 or figure_failures or panel_failures or frontmatter_failures) else 0
 
 
 if __name__ == "__main__":
