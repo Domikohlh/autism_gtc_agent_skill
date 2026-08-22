@@ -1,6 +1,8 @@
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"DejaVu Sans","fontSize":"15px","lineColor":"#8894A1","primaryTextColor":"#1F2933"},"flowchart":{"curve":"basis","nodeSpacing":40,"rankSpacing":46,"wrappingWidth":640,"htmlLabels":true}} }%%
 flowchart TD
 
+  HA["<b>A · What may be said about future risk</b>"]
+
   F(["A finding is on the report"])
 
   G{"Is it a secondary finding,<br/>or a VUS?"}
@@ -27,16 +29,41 @@ flowchart TD
   G -- "neither" --> Q
   G -- "secondary finding" --> SF
   G -- "VUS" --> VU
-
   Q -- "yes" --> T1
   Q -- "no, but documented<br/>elevated risk" --> T2
   Q -- "no" --> T3
-
   T1 --> M
   T2 --> M
   M -- "yes" --> DNE
   M -- "no" --> W
   DNE --> W
+
+  HB["<b>B · Whether a published figure may be charted — guardrail 11</b>"]
+
+  RF(["A penetrance or lifetime-risk figure appears in a source you retrieved"])
+
+  C1{"Is the <b>reporting laboratory's</b> classification<br/>pathogenic or likely pathogenic?"}
+
+  X1["<b>Refuse the whole block</b> · the page says why<br/><i>VUS · likely benign · benign · conflicting · none recorded</i><br/><i>a bar beside a VUS turns “we do not know” into a coloured bar</i>"]
+
+  C2{"Does the figure carry <b>all five</b>?<br/>condition · a percentage as published · cohort<br/>· source · retrieval date from this session"}
+
+  X2["<b>Not drawn</b> — listed underneath as uncited, with the reason<br/><i>a bar is read as a fact</i>"]
+
+  DRAW["<b>Draw it — clinician register only</b><br/>ascertainment stated under every bar · reference-only block attached<br/><i>never in family-facing output, in any format</i>"]
+
+  NV["<b>And never</b> — combined, averaged, converted from a hazard ratio,<br/>adjusted for age, sex or family history, restated as “your risk”, or recalled rather than retrieved<br/>no polygenic score under any framing · no control that changes what a number works out to"]
+
+  RF --> C1
+  C1 -- "no" --> X1
+  C1 -- "yes" --> C2
+  C2 -- "no" --> X2
+  C2 -- "yes" --> DRAW
+  DRAW -.-> NV
+
+  HA ~~~ F
+  W ~~~ HB
+  HB ~~~ RF
 
   classDef io fill:#E9F4EC,stroke:#2E6B4A,stroke-width:1.5px,color:#14342A;
   classDef gate fill:#FFF6E8,stroke:#B0761A,stroke-width:1.4px,color:#5A3B06;
@@ -44,10 +71,17 @@ flowchart TD
   classDef t2 fill:#EDF2F9,stroke:#3E6394,stroke-width:1.5px,color:#1B3357;
   classDef t3 fill:#FBECEC,stroke:#A83232,stroke-width:1.5px,color:#5E1414;
   classDef route fill:#F6EFF7,stroke:#7A4E96,stroke-width:1.4px,color:#3A2350;
+  classDef refuse fill:#FBECEC,stroke:#A83232,stroke-width:1.4px,color:#5E1414;
+  classDef banner fill:#0E3B3E,stroke:#0E3B3E,stroke-width:1px,color:#FFFFFF;
+  classDef never fill:#FFFFFF,stroke:#DDE3EA,stroke-width:1px,color:#4A5560;
 
-  class F,W io;
-  class G,Q,M gate;
+  class F,W,RF io;
+  class G,Q,M,C1,C2 gate;
   class T1 t1;
   class T2 t2;
   class T3 t3;
   class SF,VU,DNE route;
+  class X1,X2 refuse;
+  class DRAW t1;
+  class NV never;
+  class HA,HB banner;

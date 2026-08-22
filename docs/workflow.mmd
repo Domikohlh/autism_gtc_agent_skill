@@ -1,36 +1,49 @@
-%%{init: {"theme":"base","themeVariables":{"fontFamily":"DejaVu Sans","fontSize":"15px","lineColor":"#8894A1","primaryTextColor":"#1F2933"},"flowchart":{"curve":"basis","nodeSpacing":36,"rankSpacing":42,"wrappingWidth":900,"htmlLabels":true}} }%%
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"DejaVu Sans","fontSize":"15px","lineColor":"#8894A1","primaryTextColor":"#1F2933"},"flowchart":{"curve":"basis","nodeSpacing":36,"rankSpacing":44,"wrappingWidth":620,"htmlLabels":true}} }%%
 flowchart TD
 
-  IN(["<b>INPUT</b> — a report PDF, pasted text or a VCF,<br/>or just a gene symbol and a clinical question"])
+  IN(["<b>INPUT</b><br/>plain text, or a VCF<br/>a gene symbol with a clinical question<br/>a clinician's document to put into plain language<br/>a PDF, scan or photograph — <b>you</b> read it and transcribe into <code>--text</code>"])
 
-  S1["<b>1 · Parse the report</b><br/>gene · HGVS · classification · zygosity · CNVs · repeats · assay · report date<br/>identifiers are redacted on the way in"]
+  S1["<b>1 · Parse the report</b><br/>gene, transcript and HGVS<br/>classification<br/>zygosity and inheritance<br/>CNVs and chromosomal findings<br/>karyotypes — ISCN verbatim, never interpreted<br/>repeat expansions — sizes reported, never interpreted<br/>test type and report date<br/>secondary findings, if reported<br/><i>identifiers redacted on the way in</i>"]
 
-  S2["<b>2 · Look up what is established</b><br/>gene, syndrome name or cytoband → care domains, traps, sources to fetch<br/>the index holds no ages and no doses, by design"]
+  S2["<b>2 · Retrieve — the primary path, any gene, any condition</b><br/>1 · a named guideline or consensus statement<br/>2 · GeneReviews<br/>3 · ClinGen<br/>4 · ClinVar<br/>5 · OMIM<br/>6 · the condition's specialist body<br/>7 · a patient organisation<br/>8 · recent primary literature<br/><i>stop at the first authoritative answer · stamp a retrieval date</i><br/><br/><b>2b · variant provenance</b> — ClinVar, ClinGen, OMIM<br/><i>the reporting lab's classification governs; never re-classify</i>"]
 
-  S3["<b>3 · Fetch the named sources</b><br/>GeneReviews · ClinGen · ClinVar · OMIM · guidelines · patient organisations<br/>read the current specifics and stamp a retrieval date"]
+  S3["<b>3 · Check the trap registry</b><br/><i>after retrieving, not instead of</i><br/>direction of effect — SCN2A, SCN8A, GRIN2A/2B<br/>deletion vs duplication — 16p11.2<br/>separate-assay genes — FMR1<br/>time-critical findings — CACNA1C<br/>the assay blind-spot table<br/><i>a gene absent here has no trap recorded — not the same as having none</i>"]
 
-  S4["<b>4 · Apply the risk layer</b><br/>Tier 1 / Tier 2 / Tier 3, plus VUS, secondary findings and minors<br/>see risk_layer.png for the decision"]
+  S4["<b>4 · Calibrate the abstention</b><br/>established — a named guideline covers it<br/>emerging — real association, no protocol yet<br/>sparse — a handful of case reports<br/>nothing found — say so plainly<br/><i>never promote a level to look useful</i>"]
 
-  S5["<b>5 · Work out the testing gap</b><br/>what this assay could not have found · what is indicated · whose authority<br/>reanalysis or a new test — never eligibility"]
+  S5["<b>5 · Apply the risk layer</b><br/>Tier 1 / Tier 2 / Tier 3<br/>VUS<br/>secondary findings<br/>minors<br/>published risk figures<br/><i>see risk_layer.png for both decisions</i>"]
 
-  S6["<b>6 · Write both registers</b><br/>one for the family, one for the clinician<br/>the PHI check blocks the write"]
+  S6["<b>6 · Work out the testing gap</b><br/>what this assay could not have found<br/>what further testing is indicated<br/>which authority says so<br/>reanalysis, or a new test<br/><i>never eligibility</i>"]
 
-  OUT(["<b>OUTPUT — brief.md</b><br/>every clinical specific carries a source and a retrieval date"])
+  S7["<b>7 · Ask which format, then render</b><br/><i>“an interactive page you can click through,</i><br/><i>or a detailed written report?”</i><br/>then write the one they asked for"]
 
-  IN --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> OUT
+  O1["<b>Markdown report</b> — <code>--out brief.md</code><br/>family register<br/>page break<br/>clinician register, with published risk figures<br/><i>--family-only or --clinician-only for one half</i>"]
 
-  L["<b>What runs each step · what governs it</b><br/><i>scripts/ and references/ prefixes omitted below</i><br/><br/><b>1</b>  parse_report.py — <i>report_parsing.md</i><br/><b>2</b>  gene_lookup.py + assets/gene_index.json <i>(27 genes + 2 aliases · 5 CNV regions)</i> — <i>gene_index.md</i><br/><b>3</b>  no script — you fetch and read<br/><b>4</b>  no script, policy only — <i>risk_layer_policy.md</i> · <i>vus_communication.md</i><br/><b>5</b>  indication_lookup.py + assets/indication_index.json — <i>testing_indications.md</i> · <i>request_templates.md</i><br/><b>6</b>  render_brief.py + phi.py — <i>output_templates.md</i><br/><br/><i>Separate entry point: plain_language.py — putting a clinician's document into plain language for a family. Joins the pipeline at step 6.</i>"]
+  O2["<b>Interactive page, family</b> — <code>--html --audience family</code><br/>what was found<br/>what this means<br/>what this does not mean<br/>Tier 1 monitoring<br/>Tier 2 awareness<br/>where to find others<br/>questions for the appointment<br/><b>no risk figures — in no family output, in any format</b>"]
 
-  OUT ~~~ L
+  O3["<b>Interactive page, clinician</b> — <code>--html --audience clinician</code><br/>finding table<br/>gene–disease association<br/>variant evidence and provenance<br/>Tier 1 surveillance<br/>Tier 2 associations<br/>management considerations<br/>testing gaps and further testing<br/>sources, each with a retrieval date<br/>risk figures — profile tabs, cohort-basis toggle, reference-only block"]
+
+  END(["Every clinical specific carries a source and a retrieval date<br/>the PHI check blocks the write on any format"])
+
+  IN --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7
+  S7 --> O1
+  S7 --> O2
+  S7 --> O3
+  O1 ~~~ O2 ~~~ O3
+  O1 --> END
+  O2 --> END
+  O3 --> END
 
   classDef io fill:#E9F4EC,stroke:#2E6B4A,stroke-width:1.5px,color:#14342A;
   classDef step fill:#F4F6F9,stroke:#5B7A99,stroke-width:1.2px,color:#1F2933;
   classDef fetch fill:#FFF6E8,stroke:#B0761A,stroke-width:1.2px,color:#5A3B06;
   classDef risk fill:#F6EFF7,stroke:#7A4E96,stroke-width:1.5px,color:#3A2350;
-  classDef leg fill:#FFFFFF,stroke:#DDE3EA,stroke-width:1px,color:#4A5560;
+  classDef gate fill:#FFF6E8,stroke:#B0761A,stroke-width:1.4px,color:#5A3B06;
+  classDef outp fill:#E9F4EC,stroke:#2E6B4A,stroke-width:1.4px,color:#14342A;
 
-  class IN,OUT io;
-  class S1,S2,S5,S6 step;
-  class S3 fetch;
-  class S4 risk;
-  class L leg;
+  class IN,END io;
+  class S1,S6 step;
+  class S2,S3,S4 fetch;
+  class S5 risk;
+  class S7 gate;
+  class O1,O2,O3 outp;
