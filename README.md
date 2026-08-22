@@ -55,6 +55,9 @@ gain-of-function showed **94%** good-to-excellent phenytoin response, loss-of-fu
 **0%** ([*Brain*, 2024](https://academic.oup.com/brain/article/147/8/2761/7656659)).
 Families are told about the developmental gene and hear nothing about either.
 
+This skill aims to help patients, their family, and healthcare professionals to understand, validate, and further research of a genetic conditions. Currently, it 
+no longer limits to neurodevelopmental disorder, but **any** genetic report for analysis.
+
 **This tool is addressing the delivery of information, not the methodology.**
 
 ### Scope
