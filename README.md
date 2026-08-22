@@ -297,11 +297,19 @@ python scripts/bundle_skill.py --zip      # also write the archive
 ```
 
 It copies `SKILL.md`, `references/`, `scripts/`, `assets/` and the licence files, and
-leaves out the test corpus, diagrams, README, git history and Python caches. Three checks
-run against the result: the frontmatter is inside the platform's name and description
-limits, every path the bundled prose points at exists in the bundle, and every script still
-runs with its assets resolvable from the new location. A failure is printed with its reason
-and exits non-zero — the bundle is still written so you can look at it.
+leaves out the test corpus, diagrams, README, git history and Python caches. Checks run
+against the result: the frontmatter **parses as YAML** and sits inside the platform's name
+and description limits, every path the bundled prose points at exists in the bundle, and
+every script still runs with its assets resolvable from the new location. A failure is
+printed with its reason and exits non-zero — the bundle is still written so you can look
+at it.
+
+The YAML check is not decoration. The `description` is an unquoted scalar, so a colon
+followed by a space inside it (`care implications: surveillance…`) parses as a nested
+mapping and the import fails with an error naming a column rather than a cause. Length
+checks alone let exactly that ship once. `scripts/bundle_skill.py` holds the single
+implementation and `tests/smoke_test.py` calls it, so the repository and a built bundle are
+judged by the same rules.
 
 The reference check is the one that earns the script. A reference file left out produces a
 skill that reads normally and has silently lost a layer of judgement.

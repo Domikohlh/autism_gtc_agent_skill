@@ -53,6 +53,96 @@ SKIP_SUFFIXES = {".pyc", ".pyo"}
 SKIP_FILES = {"bundle_skill.py"}  # a build tool, not part of the skill
 
 FRONTMATTER_LIMITS = {"name": 64, "description": 1024}
+SKILL_BODY_GUIDANCE = 500
+
+# The value after "key: " in this frontmatter is a YAML *plain scalar* — unquoted
+# — and a handful of characters silently change what it means. A colon followed
+# by whitespace is the one that bites: "care implications: surveillance" parses
+# as a nested mapping and the import fails with an error that names a column
+# rather than a cause. Length checks alone let that ship once already.
+YAML_INDICATORS = "-?:,[]{}#&*!|>'\"%@`"
+
+
+def yaml_scalar_problems(key: str, value: str) -> list[str]:
+    """Characters that break an unquoted YAML scalar. Stdlib only, always runs."""
+    problems = []
+    if re.search(r":\s", value) or value.endswith(":"):
+        problems.append(
+            f"{key} contains a colon followed by whitespace. YAML reads that as a "
+            "nested mapping and the skill will fail to import — reword to drop the colon"
+        )
+    if " #" in value:
+        problems.append(f"{key} contains ' #', which YAML reads as the start of a comment")
+    if value[:1] and value[0] in YAML_INDICATORS:
+        problems.append(f"{key} starts with {value[0]!r}, a YAML indicator character")
+    if "\t" in value:
+        problems.append(f"{key} contains a tab character, which YAML does not allow here")
+    return problems
+
+
+def yaml_parse_problems(front: str) -> list[str]:
+    """
+    A real parse, when PyYAML happens to be importable.
+
+    Optional on purpose: this repository has no dependencies, so the lint above
+    is the guaranteed check and this is the stronger one when it is available.
+    """
+    try:
+        import yaml  # noqa: PLC0415 - optional, absence is not an error
+    except ImportError:
+        return []
+    try:
+        data = yaml.safe_load(front)
+    except Exception as exc:  # yaml.YAMLError, but never let the check itself crash
+        return [f"frontmatter is not valid YAML — {str(exc).splitlines()[0]}"]
+    if not isinstance(data, dict):
+        return ["frontmatter does not parse to a mapping of fields"]
+    return []
+
+
+def validate_frontmatter(skill_md: Path) -> tuple[list[str], list[str]]:
+    """
+    (failures, warnings) for a SKILL.md. The single implementation, used by this
+    script against a built bundle and by the test suite against the repository.
+    """
+    text = skill_md.read_text()
+    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.S)
+    if not m:
+        return ["SKILL.md has no YAML frontmatter block"], []
+
+    front, body = m.group(1), m.group(2)
+    failures = list(yaml_parse_problems(front))
+    warnings: list[str] = []
+
+    for key, limit in FRONTMATTER_LIMITS.items():
+        km = re.search(rf"^{key}:\s*(.*?)(?=\n[a-zA-Z-]+:|\Z)", front, re.S | re.M)
+        value = km.group(1).strip() if km else ""
+        if not value:
+            failures.append(f"frontmatter is missing a non-empty '{key}'")
+            continue
+        if len(value) > limit:
+            failures.append(
+                f"{key} is {len(value)} characters, over the {limit} limit by "
+                f"{len(value) - limit} — upload will be rejected"
+            )
+        if "<" in value or ">" in value:
+            failures.append(f"{key} contains an angle bracket; XML tags are rejected")
+        failures.extend(yaml_scalar_problems(key, value))
+
+    name_m = re.search(r"^name:\s*(.+)$", front, re.M)
+    name = name_m.group(1).strip() if name_m else ""
+    if name and not re.fullmatch(r"[a-z0-9-]+", name):
+        failures.append(f"name {name!r} must be lowercase letters, numbers and hyphens only")
+    if re.search(r"anthropic|claude", name, re.I):
+        failures.append(f"name {name!r} contains a reserved word")
+
+    lines = len(body.splitlines())
+    if lines > SKILL_BODY_GUIDANCE:
+        warnings.append(
+            f"SKILL.md body is {lines} lines; the guidance is under {SKILL_BODY_GUIDANCE}. "
+            "Not an upload blocker — move detail into references/"
+        )
+    return failures, warnings
 
 
 def skill_name() -> str:
@@ -110,23 +200,7 @@ def sweep(dest: Path) -> None:
 # --------------------------------------------------------------------------
 
 def check_frontmatter(dest: Path) -> list[str]:
-    text = (dest / "SKILL.md").read_text()
-    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
-    if not m:
-        return ["SKILL.md has no YAML frontmatter block"]
-
-    front, problems = m.group(1), []
-    for key, limit in FRONTMATTER_LIMITS.items():
-        km = re.search(rf"^{key}:\s*(.*?)(?=\n[a-zA-Z-]+:|\Z)", front, re.S | re.M)
-        value = km.group(1).strip() if km else ""
-        if not value:
-            problems.append(f"frontmatter is missing a non-empty '{key}'")
-        elif len(value) > limit:
-            problems.append(
-                f"{key} is {len(value)} characters, over the {limit} limit by "
-                f"{len(value) - limit} — upload will be rejected"
-            )
-    return problems
+    return validate_frontmatter(dest / "SKILL.md")[0]
 
 
 def check_references(dest: Path) -> list[str]:
