@@ -118,7 +118,7 @@ Check each flagged field against the source rather than passing it through.
 
 Identifiers are redacted from the parser's output by default. That is a backstop, not a
 licence: do not echo names, dates of birth or record numbers into anything you write, and
-see the privacy section of `README.md` before working with a real patient's report.
+see `references/data_privacy.md` before working with a real patient's report.
 
 If something critical is genuinely ambiguous — most often which gene, or whether a
 result is pathogenic versus VUS — ask rather than guess. One clarifying question is
@@ -478,6 +478,7 @@ Read these as needed — they are not all required for every case:
 | `references/report_parsing.md` | Report format is unfamiliar or fields are unclear |
 | `references/testing_indications.md` | Always, at Step 6 — before writing anything about further testing or access |
 | `references/request_templates.md` | The user wants wording for a clinician, genetics service or payer |
+| `references/data_privacy.md` | Before working with a real report, and whenever asked to put an identifier in a file |
 | `references/output_templates.md` | At Step 7, and whenever translating a document for a family |
 
 ## Scripts

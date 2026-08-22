@@ -28,7 +28,7 @@ birth, or record number to be drafted — the sender fills those in on their own
 Use square-bracket placeholders throughout: `[NAME]`, `[DATE OF BIRTH]`, `[NHS/MRN]`,
 `[CLINIC]`, `[REFERRER]`. If the user has already given you identifying details, still
 write placeholders into the document; keep the details in conversation where they are not
-saved to a file. See the privacy section of `README.md`.
+saved to a file. See `references/data_privacy.md`.
 
 ---
 

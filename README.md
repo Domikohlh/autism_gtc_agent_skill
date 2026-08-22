@@ -8,9 +8,16 @@ the **published, actionable care implications** of what was found.
 
 ## Quick start
 
-**1 · Get the skill.** Clone or download this repository, then upload the folder to your
-AI agent — Claude, Codex, WorkBuddy and similar all take a skill folder. `SKILL.md` must
-sit at the top of it. Nothing to install: there are no dependencies.
+**1 · Get the skill.** Clone or download this repository, then build the upload folder:
+
+```bash
+python scripts/bundle_skill.py
+```
+
+That writes `dist/gene-to-care-navigator/` — **upload that folder**, not the repository.
+The repository carries a test corpus, diagrams and git history that an uploaded skill does
+not need; the bundle is about 300 KB against 5 MB. Add `--zip` if your platform wants an
+archive. Nothing to install: there are no dependencies.
 
 **2 · Just ask, in your own words.** Don't name the skill; it recognises what you're asking
 about.
@@ -158,9 +165,11 @@ gene-to-care-navigator/
 ├── LICENSE·LICENSE-DOCS·NOTICE # Apache 2.0 for code, CC BY 4.0 for content
 ├── assets/gene_index.json      # pitfall registry — traps, not coverage; no ages or doses
 ├── assets/indication_index.json # assay blind spots (universal) + example indications
-├── references/                 # the judgement layer, as prose the agent reads:
+├── references/                 # the judgement layer, as prose the agent reads
+│                               #   (incl. data_privacy.md — read before a real report)
 |
 ├── scripts/
+│   ├── bundle_skill.py         # build + verify the upload folder (dev tool, not shipped)
 │   ├── phi.py                  # identifier ruleset, shared by the scripts below
 │   ├── parse_report.py         # report → findings JSON, identifiers redacted
 │   ├── gene_lookup.py          # gene / syndrome / cytoband → sources, domains, traps
@@ -276,6 +285,31 @@ organisations. For an uncurated gene it returns a search order rather than nothi
 rarely get. Lookups accept whichever word the person was given, since a family arrives
 with "Rett" at least as often as with MECP2. CNV entries print band and copy number in
 full, because deletion and duplication of one band can have partly opposite phenotypes.
+
+### `bundle_skill.py`
+
+Builds the upload folder and then checks it, rather than trusting the copy.
+
+```bash
+python scripts/bundle_skill.py            # -> dist/gene-to-care-navigator/
+python scripts/bundle_skill.py --list     # what would be copied
+python scripts/bundle_skill.py --zip      # also write the archive
+```
+
+It copies `SKILL.md`, `references/`, `scripts/`, `assets/` and the licence files, and
+leaves out the test corpus, diagrams, README, git history and Python caches. Three checks
+run against the result: the frontmatter is inside the platform's name and description
+limits, every path the bundled prose points at exists in the bundle, and every script still
+runs with its assets resolvable from the new location. A failure is printed with its reason
+and exits non-zero — the bundle is still written so you can look at it.
+
+The reference check is the one that earns the script. A reference file left out produces a
+skill that reads normally and has silently lost a layer of judgement.
+
+**`README.md` is deliberately not bundled.** It documents the repository — tests, fixtures,
+roadmap, licence rationale — none of which exists in a bundle, so shipping it would put
+dangling references in front of the agent. The privacy content the skill itself relies on
+lives in `references/data_privacy.md`.
 
 ### `indication_lookup.py`
 
@@ -404,6 +438,10 @@ A genetic test report is among the most sensitive documents a person will ever h
 concerns a named individual, it is frequently about a child, and it carries information
 about relatives who never consented to anything. **The redaction in these scripts is a
 safety net, not permission.**
+
+This section is for whoever deploys the tool. The agent-facing version — what to do about
+identifiers while producing a brief — is `references/data_privacy.md`, which ships with the
+skill.
 
 ### What the code does
 
