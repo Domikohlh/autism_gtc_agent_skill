@@ -1,0 +1,27 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Riverside Cytogenetics Unit
+CONSTITUTIONAL KARYOTYPE — REPORT
+
+Patient: Specimen, Testcase V       DOB: 19/06/2026
+Hospital number: 7730155
+Date of collection: 22 June 2026
+Date of report: 01 July 2026
+
+Clinical indication: Newborn, dysmorphic features noted on postnatal examination,
+hypotonia, single palmar crease. Trisomy 21 suspected clinically.
+
+Test performed: Peripheral blood karyotype, G-banding, 20 cells analysed.
+
+RESULT
+
+47,XY,+21
+
+Interpretation: this is a male karyotype with an additional copy of chromosome 21,
+consistent with the clinical suspicion of Down syndrome. Non-mosaic in the cells examined.
+
+Parental karyotypes are not indicated for free trisomy 21. Recurrence risk counselling
+should be offered through clinical genetics.
+
+Limitations: karyotype detects numerical and large structural chromosome abnormalities
+only. It does not detect submicroscopic copy number changes or sequence variants.

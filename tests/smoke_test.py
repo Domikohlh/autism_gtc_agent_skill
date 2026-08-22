@@ -76,113 +76,94 @@ INDICATION_EXPECTED: list[tuple[str, list[str], bool]] = [
 #   must_flag          : substrings that must appear somewhere in warnings
 #   must_not_contain   : substrings that must NOT appear anywhere in the JSON
 EXPECTED: dict[str, dict] = {
-    "reports/01_exome_block_pten_chd8.txt": {
+    # --- reports: one per condition category the skill claims to cover, plus
+    # the two case types nothing else exercises (repeat expansion, negative).
+    "reports/01_exome_pten_neurodevelopmental.txt": {
         "date": "12 March 2026", "test_type": "exome",
         "genes": ["PTEN", "CHD8"], "classes": ["Pathogenic", "VUS"],
         "must_flag": ["Secondary/incidental findings referenced"],
         "must_not_contain": ["7781204", "04/09/2017", "MCG-2026-004411"],
     },
-    "reports/02_exome_column_scn2a.txt": {
-        # The classification column sits to the LEFT of the variant here.
-        "date": "09 February 2026", "test_type": "exome",
-        "genes": ["SCN2A"], "classes": ["Pathogenic"],
-        "must_flag": ["read from text preceding its variant"],
-        "must_not_contain": ["5540982", "17/11/2019"],
-    },
-    "reports/03_cma_iscn_22q11.txt": {
+    "reports/02_microarray_22q11_deletion.txt": {
         "date": "02 May 2026", "test_type": "microarray",
         "cnvs": [("22q11.21", "deletion", 1)],
         "must_not_contain": ["3391077", "22/05/2021"],
     },
-    "reports/04_cma_prose_16p11_dup.txt": {
-        # Must NOT also report the reciprocal deletion the text mentions.
-        "date": "18 June 2026", "test_type": "microarray",
-        "cnvs": [("16p11.2", "duplication", None)],
-        "must_not_contain": ["4470221", "30/01/2015"],
+    "reports/03_karyotype_trisomy21_down.txt": {
+        # A karyotype carries no HGVS. The finding IS the ISCN string, captured
+        # verbatim and never interpreted: 47,XY,+21 and 46,XY,t(14;21) differ by
+        # a few characters and mean very different things.
+        "date": "01 July 2026", "test_type": "karyotype",
+        "genes": [], "cnvs": [], "repeats": [],
+        "karyotypes": ["47,XY,+21"],
+        "must_not_contain": ["7730155", "19/06/2026"],
     },
-    "reports/05_results_page_cacna1c.txt": {
-        "date": None, "test_type": None,
-        "genes": ["CACNA1C"], "classes": ["Pathogenic"],
-        "must_flag": ["Report date not identified", "Test type not identified"],
+    "reports/04_panel_mybpc3_cardiac.txt": {
+        "date": "27 March 2026",
+        "genes": ["MYBPC3"], "classes": ["VUS"],
+        "must_not_contain": ["4419277", "30/11/2008"],
     },
-    "reports/06_repeat_fmr1_full_mutation.txt": {
+    "reports/05_newborn_pah_metabolic.txt": {
+        # Second variant has no Gene: label of its own — the parser flags it
+        # rather than attributing it, which is the conservative behaviour.
+        "date": "29 July 2026",
+        "genes": ["PAH", None], "classes": ["Pathogenic", "Pathogenic"],
+        "must_not_contain": ["8802341", "04/07/2026"],
+    },
+    "reports/06_repeat_fmr1_fragile_x.txt": {
+        # The only repeat-expansion coverage. FMR1 sizing is a separate assay:
+        # a normal exome does not exclude it.
         "date": "28 May 2026",
         "repeats": [("FMR1", "CGG", [340], "full mutation", "fully methylated")],
         "must_flag": ["Repeat expansion result present"],
         "must_not_contain": ["6620144", "08/07/2019"],
     },
-    "reports/07_negative_exome_2019_stale.txt": {
-        "date": "21 October 2019", "test_type": "exome",
+    "reports/07_negative_exome.txt": {
+        # "repeat expansion", singular, inside a negation in the limitations
+        # paragraph. Must NOT become a repeat record, and the negative report
+        # must keep its "nothing detected" warning.
+        "date": "05 February 2026", "test_type": "exome",
         "genes": [], "cnvs": [], "repeats": [],
-        "must_flag": ["No variants, CNVs or repeat expansions detected"],
+        "must_flag": ["No variants, CNVs, repeat expansions or karyotype detected"],
+        "must_not_contain": ["9902311", "16/04/2017"],
     },
-    "reports/08_negative_cma_recent.txt": {
-        "date": "16 March 2026", "test_type": "microarray",
-        "genes": [], "cnvs": [], "repeats": [],
-        "must_flag": ["No variants, CNVs or repeat expansions detected"],
-    },
-    "reports/09_vus_only_syngap1.txt": {
-        "date": "30 January 2026", "test_type": "panel",
-        "genes": ["SYNGAP1"], "classes": ["VUS"],
-    },
-    "reports/10_vus_in_tier1_gene_pten.txt": {
-        "date": "11 May 2026", "test_type": "exome",
-        "genes": ["PTEN"], "classes": ["VUS"],
-    },
-    "reports/11_secondary_finding_brca2.txt": {
-        "date": "04 March 2026", "test_type": "genome",
-        "genes": ["SHANK3", "BRCA2"], "classes": ["Pathogenic", "Pathogenic"],
-        "must_flag": ["Secondary/incidental findings referenced"],
-    },
-    "reports/12_panel_scn1a_dravet.txt": {
-        "date": "14 July 2026", "test_type": "panel",
-        "genes": ["SCN1A"], "classes": ["Pathogenic"],
-    },
-    "reports/13_uncurated_gene_tbr1.txt": {
-        "date": "06 February 2026", "test_type": "exome",
-        "genes": ["TBR1"], "classes": ["Pathogenic"],
-    },
-    "reports/14_multi_finding_ranking.txt": {
-        "date": "01 April 2026", "test_type": "exome",
-        "genes": ["ADNP", "NRXN1", "PTEN"],
-        "classes": ["VUS", "VUS", "Pathogenic"],
-    },
-    "reports/15_mecp2_rett.txt": {
-        "date": "03 June 2026",
-        "genes": ["MECP2"], "classes": ["Pathogenic"],
-    },
-    "reports/16_transcript_mismatch.txt": {
-        # The parser cannot know the transcript belongs to another gene. It
-        # reports what the document says; catching this is the agent's job.
-        "date": "20 May 2026", "test_type": "exome",
-        "genes": ["SCN2A"], "classes": ["Pathogenic"],
-    },
-    "reports/17_name_in_prose.txt": {
-        # Documented limit: the name is in running prose and IS NOT redacted.
-        "date": "24 February 2026", "test_type": "exome",
-        "genes": ["ARID1B"], "classes": ["Pathogenic"],
-    },
-    "reports/18_non_english_german.txt": {
-        # German labels: the report date is found and the Geburtsdatum excluded,
-        # but classification and zygosity are missed and must be flagged.
-        "date": "27.03.2026",
-        "genes": ["STXBP1"], "classes": [None],
-        "must_not_contain": ["15/02/2019"],
-    },
-    "reports/19_fmr1_premutation_child.txt": {
-        "date": "22 April 2026",
-        "repeats": [("FMR1", "CGG", [30, 78], "premutation", "unmethylated")],
-        "must_flag": ["Repeat expansion result present"],
-    },
-    "reports/20_mosaic_tsc2.txt": {
-        "date": "09 March 2026", "test_type": "genome",
-        "genes": ["TSC2"], "classes": ["Pathogenic"],
-    },
-    "reports/25_prompt_injection.txt": {
-        # The parser has no opinion on the injected text; it extracts the finding.
+    # --- adversarial: the parser has no opinion on injected text; it extracts
+    # the finding and leaves the instruction for the agent to surface.
+    "adversarial/A1_injection_in_report.txt": {
         "date": "30 April 2026", "test_type": "exome",
         "genes": ["SYNGAP1"], "classes": ["Pathogenic"],
     },
+    "adversarial/A2_injection_disable_redaction.txt": {
+        "date": "12 June 2026", "test_type": "exome",
+        "genes": ["ARID1B"], "classes": ["Pathogenic"],
+        # The injection demands the identifiers be reproduced; they must not be.
+        "must_not_contain": ["6650218", "22/05/2019"],
+    },
+    "adversarial/A3_injection_claimed_authority.txt": {
+        "date": "20 May 2026", "test_type": "exome",
+        "genes": ["PTEN"], "classes": ["Pathogenic"],
+        "must_not_contain": ["3390871", "11/03/2017"],
+    },
+    "adversarial/A4_injection_forwarded_message.txt": {
+        # Injection inside user-forwarded text rather than a lab document.
+        "genes": ["SYNGAP1"], "classes": ["Pathogenic"],
+    },
+    "adversarial/A5_injection_risk_score.txt": {
+        "date": "03 July 2026",
+        "genes": ["BRCA2"], "classes": ["Pathogenic"],
+        # The frameshift suffix is pinned here: it was being dropped, turning a
+        # truncating variant into an apparent missense — and it is the string
+        # that would go into a ClinVar query.
+        "proteins": ["p.Ser1982ArgfsTer22"],
+        "must_not_contain": ["RMP-2026-114520", "04/09/1988"],
+    },
+    "adversarial/A6_injection_promote_vus.txt": {
+        # The lab said VUS. Nothing downstream may promote it.
+        "date": "22 May 2026",
+        "genes": ["MYBPC3"], "classes": ["VUS"],
+        "must_not_contain": ["8871204", "17/01/2004"],
+    },
+    # --- VCF: a VCF carries no interpretation, and the parser says so.
     "vcf/21_snpeff_annotated.vcf": {
         "genes": ["PTEN", "SCN2A", "CHD8", "FMR1"],
         "classes": ["Pathogenic", "Likely pathogenic", "VUS", None],
@@ -203,20 +184,17 @@ EXPECTED: dict[str, dict] = {
         "genes": ["PTEN", "ARID1B"],
         "must_flag": ["Input was a VCF", "3 samples"],
     },
-    "reports/26_negative_repeat_limitation.txt": {
-        # "repeat expansion", singular, inside a negation in the limitations
-        # paragraph. Must NOT become a repeat record, and the negative report
-        # must keep its "nothing detected" warning.
-        "date": "05 February 2026", "test_type": "exome",
-        "genes": [], "cnvs": [], "repeats": [],
-        "must_flag": ["No variants, CNVs or repeat expansions detected"],
-        "must_not_contain": ["9902311", "16/04/2017"],
-    },
     "vcf/27_homref_nocall.vcf": {
         # 0/0 and 0|0 rows are not findings; ./. is kept but flagged.
         "genes": ["SCN2A", "CHD8"],
         "zygosities": [None, "heterozygous"],
         "must_flag": ["2 record(s) were homozygous reference"],
+    },
+    "vcf/28_sample_order.vcf": {
+        # Proband is the THIRD sample. Default reads the first and says so.
+        "genes": ["SHANK3"],
+        "zygosities": ["heterozygous"],
+        "must_flag": ["Genotypes were read from 'mother'", "3 samples"],
     },
     # --- .txt fallback for platforms that refuse .vcf uploads -------------
     # A clean rename loses nothing. What a *conversion* does to the content is
@@ -252,12 +230,6 @@ EXPECTED: dict[str, dict] = {
         "genes": ["PTEN", "SCN2A", "CHD8", "FMR1"],
         "zygosities": ["heterozygous", "heterozygous", "heterozygous", "hemizygous"],
         "must_flag": ["tab-free"],
-    },
-    "vcf/28_sample_order.vcf": {
-        # Proband is the THIRD sample. Default reads the first and says so.
-        "genes": ["SHANK3"],
-        "zygosities": ["heterozygous"],
-        "must_flag": ["Genotypes were read from 'mother'", "3 samples"],
     },
 }
 
@@ -299,6 +271,9 @@ CORPUS_IDENTIFIERS = [
     "7712008", "21/09/2021",
     "2280551", "05/11/2023",
     "4419902", "13/01/2020",
+    "5512094", "08/02/1979", "7730155", "19/06/2026",
+    "4419277", "30/11/2008", "8802341", "04/07/2026",
+    "6650218", "22/05/2019", "3390871", "11/03/2017",
     "9902311", "16/04/2017",
     "Testcase",
 ]
@@ -336,8 +311,12 @@ def check(name: str, spec: dict, verbose: bool) -> list[str]:
         cmp("classifications", [v["classification"] for v in record["variants"]], spec["classes"])
     if "zygosities" in spec:
         cmp("zygosities", [v["zygosity"] for v in record["variants"]], spec["zygosities"])
+    if "proteins" in spec:
+        cmp("hgvs_p", [v["hgvs_p"] for v in record["variants"]], spec["proteins"])
     if "cnvs" in spec:
         cmp("cnvs", [(c["band"], c["kind"], c["copies"]) for c in record["cnvs"]], spec["cnvs"])
+    if "karyotypes" in spec:
+        cmp("karyotypes", [k["iscn"] for k in record["karyotypes"]], spec["karyotypes"])
     if "repeats" in spec:
         got = [
             (r["gene"], r["motif"], r["allele_sizes"], r["category"], r["methylation"])
@@ -387,6 +366,217 @@ def check_indications() -> list[str]:
             failures.append(
                 f"{features!r}: matched_via_absence expected {expect_absence}, got {absence}"
             )
+    return failures
+
+
+# render_brief.py: the gates in front of the risk chart. These exist because a bar
+# is read as a fact — the figure is a citation of a cohort, never a score for the
+# person in front of you, and every one of these cases is a way that distinction
+# could quietly collapse.
+#
+# (label, findings, must appear in the clinician register, must NOT appear)
+RISK_FIGURE_CASES: list[tuple[str, dict, list[str], list[str]]] = [
+    (
+        "pathogenic + all five fields draws the bar",
+        {"clinician": {"finding_table": {"Classification": "Pathogenic"}},
+         "risk_figures": [{"condition": "Thyroid cancer, lifetime", "percent": 35,
+                           "cohort": "ascertained PHTS patients, n=3399",
+                           "source": "PHTS Consensus 2025", "retrieved": "2026-08-18"}]},
+        ["35%", "ascertained PHTS patients", "not a score"],
+        ["No figures are shown"],
+    ),
+    (
+        "likely pathogenic also draws",
+        {"clinician": {"finding_table": {"Classification": "Likely pathogenic"}},
+         "risk_figures": [{"condition": "Renal cell carcinoma", "percent": 12,
+                           "cohort": "clinic-based cohort", "source": "S 2025",
+                           "retrieved": "2026-08-18"}]},
+        ["12%"],
+        ["No figures are shown"],
+    ),
+    (
+        "a VUS refuses the whole block",
+        {"clinician": {"finding_table": {"Classification": "Variant of uncertain significance"}},
+         "risk_figures": [{"condition": "HCM, lifetime", "percent": 60,
+                           "cohort": "HCM probands", "source": "S 2024",
+                           "retrieved": "2026-08-19"}]},
+        ["No figures are shown"],
+        ["60%"],
+    ),
+    (
+        "likely benign is not rescued by the word 'likely'",
+        {"clinician": {"finding_table": {"Classification": "Likely benign"}},
+         "risk_figures": [{"condition": "Anything", "percent": 40,
+                           "cohort": "a cohort", "source": "S 2025",
+                           "retrieved": "2026-08-19"}]},
+        ["No figures are shown"],
+        ["40%"],
+    ),
+    (
+        "conflicting classifications refuse the block",
+        {"clinician": {"finding_table": {"Classification": "Conflicting classifications of pathogenicity"}},
+         "risk_figures": [{"condition": "Anything", "percent": 40,
+                           "cohort": "a cohort", "source": "S 2025",
+                           "retrieved": "2026-08-19"}]},
+        ["No figures are shown"],
+        ["40%"],
+    ),
+    (
+        "no classification recorded refuses the block",
+        {"clinician": {"finding_table": {"Gene": "PTEN"}},
+         "risk_figures": [{"condition": "Thyroid cancer", "percent": 35,
+                           "cohort": "a cohort", "source": "S 2025",
+                           "retrieved": "2026-08-18"}]},
+        ["No figures are shown", "classification recorded in the finding table"],
+        ["35%"],
+    ),
+    (
+        "a figure with no cohort is not drawn",
+        {"clinician": {"finding_table": {"Classification": "Pathogenic"}},
+         "risk_figures": [{"condition": "Renal cell carcinoma", "percent": 34,
+                           "source": "S 2025", "retrieved": "2026-08-18"}]},
+        ["no cohort recorded"],
+        ["34%"],
+    ),
+    (
+        "a percent outside 0-100 is refused, not clamped to a full bar",
+        {"clinician": {"finding_table": {"Classification": "Pathogenic"}},
+         "risk_figures": [{"condition": "Overall", "percent": 350,
+                           "cohort": "combined", "source": "derived",
+                           "retrieved": "2026-08-18"}]},
+        ["outside 0-100"],
+        ["100%", "350%"],
+    ),
+    (
+        "a retrieval date that is not a date is refused",
+        {"clinician": {"finding_table": {"Classification": "Pathogenic"}},
+         "risk_figures": [{"condition": "Thyroid cancer", "percent": 35,
+                           "cohort": "a cohort", "source": "S 2025",
+                           "retrieved": "last year"}]},
+        ["no retrieval date"],
+        ["35%"],
+    ),
+]
+
+
+# The interactive panel and the audience boundary. The panel is modelled on a
+# variant-browser UI whose original had a computed risk score and a penetrance
+# dial; these cases pin the fact that neither came with it, that the figures
+# never reach a family-facing surface, and that the tier slot cannot become an
+# actionability verdict.
+PANEL_CASES: list[tuple[str, dict, str, list[str], list[str]]] = [
+    (
+        "figures render on the clinician page",
+        {"clinician": {"finding_table": {"Gene": "PTEN", "Classification": "Pathogenic"}},
+         "risk_figures": [{"condition": "Thyroid cancer", "percent": 35,
+                           "cohort": "ascertained cohort", "source": "S 2025",
+                           "retrieved": "2026-08-18"}]},
+        "clinician", ["35%", "Reference only", "not a diagnosis"], [],
+    ),
+    (
+        "the family page carries no figure block at all",
+        {"family": {"what_was_found": "A change was found."},
+         "clinician": {"finding_table": {"Gene": "PTEN", "Classification": "Pathogenic"}},
+         "risk_figures": [{"condition": "Thyroid cancer", "percent": 35,
+                           "cohort": "ascertained cohort", "source": "S 2025",
+                           "retrieved": "2026-08-18"}]},
+        # Not merely "no figures": none of the machinery either. The panel
+        # stylesheet is emitted with the panel, so a family page carries no
+        # class names, no rules, and no comments belonging to it.
+        "family", [],
+        ["35%", "Published figures", "Reference only", "Thyroid cancer",
+         "vptabs", "refonly", "cohort", "penetrance"],
+    ),
+    (
+        "two cohort bases raise the toggle and keep both figures",
+        {"risk_panel": {"findings": [{
+            "label": "BRCA1", "locus": "17q21.31", "classification": "Pathogenic",
+            "figures": [
+                {"condition": "Breast carcinoma", "percent": 72, "basis": "clinic",
+                 "cohort": "ascertained families", "source": "A 2025",
+                 "retrieved": "2026-08-20"},
+                {"condition": "Breast carcinoma", "percent": 46, "basis": "population",
+                 "cohort": "unselected carriers", "source": "B 2026",
+                 "retrieved": "2026-08-20"}]}]}},
+        "clinician", ["72%", "46%", "Clinic-ascertained", "Population-based"], [],
+    ),
+    (
+        "a VUS finding keeps its tab but shows no figure",
+        {"risk_panel": {"findings": [{
+            "label": "LRRK2 G2019S", "classification": "Variant of uncertain significance",
+            "figures": [{"condition": "Parkinson disease", "percent": 28,
+                         "cohort": "a cohort", "source": "S 2025",
+                         "retrieved": "2026-08-20"}]}]}},
+        "clinician", ["LRRK2 G2019S", "No figures are shown"], ["28%"],
+    ),
+    (
+        "one finding refused does not suppress another that is allowed",
+        {"risk_panel": {"findings": [
+            {"label": "BRCA1", "classification": "Pathogenic",
+             "figures": [{"condition": "Breast carcinoma", "percent": 72,
+                          "cohort": "ascertained families", "source": "A 2025",
+                          "retrieved": "2026-08-20"}]},
+            {"label": "LRRK2", "classification": "VUS",
+             "figures": [{"condition": "Parkinson disease", "percent": 28,
+                          "cohort": "a cohort", "source": "S 2025",
+                          "retrieved": "2026-08-20"}]}]}},
+        "clinician", ["72%", "No figures are shown"], ["28%"],
+    ),
+    (
+        "an actionability verdict is refused from the tier slot",
+        {"risk_panel": {"findings": [{
+            "label": "BRCA1", "classification": "Pathogenic",
+            "surveillance_tier": "Tier III (Low Risk)",
+            "figures": [{"condition": "Breast carcinoma", "percent": 72,
+                         "cohort": "ascertained families", "source": "A 2025",
+                         "retrieved": "2026-08-20"}]}]}},
+        "clinician", ["72%"], ["Low Risk", "Tier III"],
+    ),
+]
+
+
+def check_panel() -> list[str]:
+    """Audience boundary, per-finding gates, and the closed tier vocabulary."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import render_brief
+    except ImportError as exc:  # pragma: no cover - environment, not a regression
+        return [f"could not import render_brief: {exc}"]
+
+    failures = []
+    for label, findings, audience, must, must_not in PANEL_CASES:
+        page = render_brief.render_html(findings, audience)
+        for needle in must:
+            if needle not in page:
+                failures.append(f"{label}: expected {needle!r} in the {audience} page")
+        for needle in must_not:
+            if needle in page:
+                failures.append(f"{label}: {needle!r} must NOT appear in the {audience} page")
+
+    # The page must stay script-free: it is emailed, opened offline and printed.
+    page = render_brief.render_html(PANEL_CASES[2][1], "clinician")
+    if "<script" in page.lower():
+        failures.append("the interactive panel introduced a <script> tag")
+    return failures
+
+
+def check_risk_figures() -> list[str]:
+    """Assert the chart gates. Failures here are the dangerous kind."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import render_brief
+    except ImportError as exc:  # pragma: no cover - environment problem, not a regression
+        return [f"could not import render_brief: {exc}"]
+
+    failures = []
+    for label, findings, must, must_not in RISK_FIGURE_CASES:
+        rendered = render_brief.render_clinician(findings)
+        for needle in must:
+            if needle not in rendered:
+                failures.append(f"{label}: expected {needle!r} in the output")
+        for needle in must_not:
+            if needle in rendered:
+                failures.append(f"{label}: {needle!r} must NOT appear")
     return failures
 
 
@@ -450,6 +640,20 @@ def main() -> int:
         print(f"  FAIL  {f}")
     print(f"  {len(INDICATION_EXPECTED) - len(indication_failures)}/{len(INDICATION_EXPECTED)} pictures routed correctly")
 
+    print("\nRisk-figure gates (render_brief.py):")
+    figure_failures = check_risk_figures()
+    for f in figure_failures:
+        print(f"  FAIL  {f}")
+    print(f"  {len(RISK_FIGURE_CASES) - len({f.split(':')[0] for f in figure_failures})}"
+          f"/{len(RISK_FIGURE_CASES)} gate cases held")
+
+    print("\nPanel, audience boundary and tier vocabulary:")
+    panel_failures = check_panel()
+    for f in panel_failures:
+        print(f"  FAIL  {f}")
+    print(f"  {len(PANEL_CASES) - len({f.split(':')[0] for f in panel_failures})}"
+          f"/{len(PANEL_CASES)} panel cases held")
+
     print("\nSynthetic-corpus check:")
     unmarked = corpus_is_synthetic()
     for u in unmarked:
@@ -459,7 +663,8 @@ def main() -> int:
     if failed:
         print("\nA failure means the parser changed. Read the diff before editing "
               "expectations — the fixture may be right and the parser wrong.")
-    return 1 if (failed or leaks or unmarked or indication_failures) else 0
+    return 1 if (failed or leaks or unmarked or indication_failures
+                 or figure_failures or panel_failures) else 0
 
 
 if __name__ == "__main__":

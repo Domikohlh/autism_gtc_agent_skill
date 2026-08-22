@@ -19,7 +19,7 @@ flowchart TD
 
   IN --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> OUT
 
-  L["<b>What runs each step · what governs it</b><br/><i>scripts/ and references/ prefixes omitted below</i><br/><br/><b>1</b>  parse_report.py — <i>report_parsing.md</i><br/><b>2</b>  gene_lookup.py + assets/gene_index.json <i>(29 genes · 5 CNV regions)</i> — <i>gene_index.md</i><br/><b>3</b>  no script — you fetch and read<br/><b>4</b>  no script, policy only — <i>risk_layer_policy.md</i> · <i>vus_communication.md</i><br/><b>5</b>  indication_lookup.py + assets/indication_index.json — <i>testing_indications.md</i> · <i>request_templates.md</i><br/><b>6</b>  render_brief.py + phi.py — <i>output_templates.md</i><br/><br/><i>Separate entry point: plain_language.py — putting a clinician's document into plain language for a family. Joins the pipeline at step 6.</i>"]
+  L["<b>What runs each step · what governs it</b><br/><i>scripts/ and references/ prefixes omitted below</i><br/><br/><b>1</b>  parse_report.py — <i>report_parsing.md</i><br/><b>2</b>  gene_lookup.py + assets/gene_index.json <i>(27 genes + 2 aliases · 5 CNV regions)</i> — <i>gene_index.md</i><br/><b>3</b>  no script — you fetch and read<br/><b>4</b>  no script, policy only — <i>risk_layer_policy.md</i> · <i>vus_communication.md</i><br/><b>5</b>  indication_lookup.py + assets/indication_index.json — <i>testing_indications.md</i> · <i>request_templates.md</i><br/><b>6</b>  render_brief.py + phi.py — <i>output_templates.md</i><br/><br/><i>Separate entry point: plain_language.py — putting a clinician's document into plain language for a family. Joins the pipeline at step 6.</i>"]
 
   OUT ~~~ L
 

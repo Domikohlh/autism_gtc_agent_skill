@@ -1,0 +1,28 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Eastgate Molecular Genetics
+CONFIRMATORY MOLECULAR TESTING — REPORT
+
+Patient: Specimen, Testcase X       DOB: 04/07/2026
+Case number: 8802341
+Date of collection: 18 July 2026
+Date of report: 29 July 2026
+
+Indication: Raised phenylalanine on newborn bloodspot screening. Confirmatory testing
+requested by the metabolic team.
+
+Test performed: PAH gene sequencing and deletion/duplication analysis.
+
+RESULT
+
+Gene: PAH
+Transcript: NM_000277.3
+Variant 1: c.1222C>T (p.Arg408Trp), heterozygous, Pathogenic
+Variant 2: c.1315+1G>A, heterozygous, Pathogenic
+Zygosity: compound heterozygous — variants confirmed in trans by parental testing
+
+Interpretation: this result is consistent with phenylalanine hydroxylase deficiency.
+Management is directed by the metabolic team and dietary intervention is time-critical in
+the newborn period.
+
+Carrier testing is available for relatives through clinical genetics.

@@ -5,6 +5,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+*.pptx
 
 # Build output of scripts/bundle_skill.py — regenerate it, don't commit it.
 dist/

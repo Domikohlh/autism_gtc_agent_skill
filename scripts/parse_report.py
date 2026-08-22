@@ -2,7 +2,10 @@
 """
 Extract structured findings from a genetic test report.
 
-Handles plain text, PDF (via pdfplumber or pdftotext), and VCF. Emits JSON.
+Handles plain text and VCF. Emits JSON.
+
+No PDF reader: when a report is a PDF or a photograph the agent reads it and
+passes the text in with --text. See references/report_parsing.md.
 
 Format is detected from content, not from the file extension, so a VCF renamed
 to .txt — which several upload platforms require — parses identically.
@@ -19,7 +22,6 @@ shared with render_brief.py. Pass --no-redact only when debugging against a
 synthetic report.
 
 Usage:
-    python parse_report.py report.pdf
     python parse_report.py report.txt --json out.json
     python parse_report.py --text "SCN2A c.5645G>A p.(Arg1882Gln) heterozygous, pathogenic"
     python parse_report.py annotated.vcf        # or annotated.vcf.txt — content decides
@@ -31,7 +33,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
@@ -53,8 +54,13 @@ HGVS_C = re.compile(
     re.IGNORECASE,
 )
 
+# The frameshift suffix is its own optional group, deliberately: as one branch of
+# the alternation it never fired, because `[A-Z][a-z]{2}` matched the substituted
+# residue first and the group closed. p.Ser1982ArgfsTer22 was recorded as
+# p.Ser1982Arg — a truncating frameshift silently rewritten as a missense, and
+# the wrong string to carry into a ClinVar query.
 HGVS_P = re.compile(
-    r"p\.\(?(?P<p>[A-Z][a-z]{2}\d+(?:[A-Z][a-z]{2}|Ter|\*|fs(?:Ter\d+|\*\d+)?|=)?)\)?"
+    r"p\.\(?(?P<p>[A-Z][a-z]{2}\d+(?:[A-Z][a-z]{2}|Ter|\*|=)?(?:fs(?:Ter\d+|\*\d+)?)?)\)?"
 )
 
 # Explicitly labelled gene field — the authoritative source when present.
@@ -126,6 +132,16 @@ CNV_REFERENTIAL = re.compile(
     r"|distinguish(?:ed)?\s+from|compared\s+(?:to|with))"
     r"(?:\s+(?:the|a|an|this|that|its))?\s*$",
     re.IGNORECASE,
+)
+
+# Constitutional karyotype in ISCN form — 46,XX / 47,XY,+21 / 45,X / 46,XX,t(2;5).
+# Captured verbatim and never interpreted: the notation is a formal grammar, a
+# single character carries the finding, and paraphrasing it is how a translocation
+# becomes a trisomy. Trisomy 21 is among the most common genetic findings there
+# is, and before this the parser saw a karyotype report as empty.
+KARYOTYPE = re.compile(
+    r"\b(?P<kary>(?:4[0-9]|5[0-9]|69|9[0-2]),\s?(?:X[XY]?|XX[XY]|XY[Y]?|X)"
+    r"(?:,[^\s,][^\s]*)*(?:\[\d+\])?)"
 )
 
 # Repeat expansions. FMR1 is the canonical case: repeat sizing is a separate
@@ -320,6 +336,13 @@ class CopyNumberVariant:
 
 
 @dataclass
+class Karyotype:
+    iscn: str | None = None
+    raw_context: str = ""
+    needs_review: list[str] = field(default_factory=list)
+
+
+@dataclass
 class RepeatExpansion:
     gene: str | None = None
     motif: str | None = None
@@ -339,6 +362,7 @@ class ReportRecord:
     variants: list[Variant] = field(default_factory=list)
     cnvs: list[CopyNumberVariant] = field(default_factory=list)
     repeats: list[RepeatExpansion] = field(default_factory=list)
+    karyotypes: list[Karyotype] = field(default_factory=list)
     secondary_findings_mentioned: bool = False
     candidate_dates: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -349,70 +373,19 @@ class ReportRecord:
 # --------------------------------------------------------------------------
 
 def read_text(path: Path) -> str:
-    suffix = path.suffix.lower()
-    if suffix == ".pdf":
-        return read_pdf(path)
+    """
+    Read a file as text.
+
+    There is deliberately no PDF reader here. When a report arrives as a PDF or a
+    photograph, the agent can already see it — so it reads it and passes the text
+    in with --text. A bundled extractor adds a dependency, a crash surface, and a
+    silent-failure mode (an image-only PDF yields empty output that looks like a
+    negative report), in exchange for doing worse what the agent does natively.
+    See references/report_parsing.md for the extraction format.
+    """
     return path.read_text(errors="replace")
 
 
-SCANNED_PDF_HINT = (
-    "No text could be extracted. If this is a scanned or photographed report, "
-    "it needs OCR first (e.g. `ocrmypdf in.pdf out.pdf`). Afterwards, verify the "
-    "variant string character by character against the original — a misread "
-    "c.1234G>A vs c.1234C>A is a different variant."
-)
-
-
-def read_pdf(path: Path) -> str:
-    """
-    Extract text from a PDF, trying pdfplumber then pdftotext.
-
-    Both routes are attempted before giving up, and failures report what to do
-    next rather than surfacing a traceback. Reports reach this tool as scans and
-    phone photographs often enough that the unreadable-PDF path is a normal
-    case, not an exceptional one.
-    """
-    attempts: list[str] = []
-
-    try:
-        import pdfplumber  # type: ignore
-
-        with pdfplumber.open(str(path)) as pdf:
-            text = "\n".join((page.extract_text() or "") for page in pdf.pages)
-        if text.strip():
-            return text
-        attempts.append("pdfplumber opened the file but found no text layer")
-    except ImportError:
-        attempts.append("pdfplumber not installed")
-    except Exception as exc:  # malformed, encrypted, or otherwise unreadable
-        attempts.append(f"pdfplumber failed: {type(exc).__name__}: {exc}")
-
-    try:
-        out = subprocess.run(
-            ["pdftotext", "-layout", str(path), "-"],
-            capture_output=True, text=True, check=True,
-        )
-        if out.stdout.strip():
-            return out.stdout
-        attempts.append("pdftotext ran but found no text layer")
-    except FileNotFoundError:
-        attempts.append("pdftotext not available (install poppler-utils)")
-    except subprocess.CalledProcessError as exc:
-        attempts.append(f"pdftotext failed: {exc.stderr.strip() or exc}")
-
-    detail = "\n".join(f"  - {a}" for a in attempts)
-
-    if any("no text layer" in a for a in attempts):
-        hint = SCANNED_PDF_HINT
-    elif all("not installed" in a or "not available" in a for a in attempts):
-        hint = ("No PDF reader available. Install one of: `pip install pdfplumber` "
-                "or poppler-utils for pdftotext.")
-    else:
-        hint = ("A PDF reader was available but could not open this file — it may be "
-                "corrupt, truncated, or password-protected. Try opening it manually, "
-                "re-exporting it, or ask for the report as text.")
-
-    raise RuntimeError(f"Could not read {path.name}.\n{detail}\n\n{hint}")
 
 
 # --------------------------------------------------------------------------
@@ -716,6 +689,31 @@ def parse_prose_cnvs(text: str, iscn_bands: list[str]) -> list[CopyNumberVariant
             continue
         kept.append(c)
     return kept
+
+
+def parse_karyotypes(text: str) -> list[Karyotype]:
+    """
+    Capture ISCN karyotype strings verbatim.
+
+    Reported, never parsed apart. `47,XY,+21` and `46,XY,t(14;21)` mean very
+    different things to a family, and the difference is a few characters — so the
+    string is handed on exactly as printed and the agent reads it.
+    """
+    found: list[Karyotype] = []
+    seen: set[str] = set()
+    for m in KARYOTYPE.finditer(text):
+        iscn = m.group("kary").rstrip(".,;")
+        if iscn in seen:
+            continue
+        seen.add(iscn)
+        found.append(Karyotype(
+            iscn=iscn,
+            raw_context=window(text, m.start(), m.end()),
+            needs_review=["ISCN karyotype captured verbatim and NOT interpreted — read the "
+                          "notation against the source; one character distinguishes a "
+                          "trisomy from a translocation"],
+        ))
+    return found
 
 
 def parse_repeats(text: str) -> list[RepeatExpansion]:
@@ -1034,6 +1032,7 @@ def parse(text: str, source: str | None = None) -> ReportRecord:
     rec.variants = parse_variants(text)
     rec.cnvs = parse_cnvs(text)
     rec.repeats = parse_repeats(text)
+    rec.karyotypes = parse_karyotypes(text)
 
     lowered = text.lower()
     rec.secondary_findings_mentioned = any(cue in lowered for cue in SECONDARY_FINDING_CUES)
@@ -1066,9 +1065,9 @@ def parse(text: str, source: str | None = None) -> ReportRecord:
 
 
 def finalise_warnings(rec: ReportRecord) -> ReportRecord:
-    if not rec.variants and not rec.cnvs and not rec.repeats:
+    if not rec.variants and not rec.cnvs and not rec.repeats and not rec.karyotypes:
         rec.warnings.append(
-            "No variants, CNVs or repeat expansions detected. The report may be negative, "
+            "No variants, CNVs, repeat expansions or karyotype detected. The report may be negative, "
             "may be an image requiring OCR, or may use a format this parser does not "
             "recognise. Read it directly."
         )
@@ -1121,7 +1120,7 @@ def parse_path(path: Path, do_redact: bool = True, sample: str | None = None) ->
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("path", nargs="?", help="Report file (.pdf, .txt, .vcf)")
+    ap.add_argument("path", nargs="?", help="Report file (.txt, .vcf)")
     ap.add_argument("--text", help="Parse a literal string instead of a file")
     ap.add_argument("--json", help="Write JSON to this path instead of stdout")
     ap.add_argument(
