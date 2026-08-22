@@ -84,6 +84,8 @@ single-finding panel automatically, so both shapes take the same code path.
 
   "risk_panel": {"findings": [{
      "label": "BRCA1 c.190T>C",
+     "gene": "BRCA1",                      # captions the ideogram; defaults to
+                                           # the first token of `label`
      "locus": "17q21.31",                  # schematic ideogram only, not a coordinate
      "classification": "Pathogenic",       # gated per finding, exactly as above
      "provenance": {"stars": 2, "submitters": 4, "conflicts": false,
@@ -354,11 +356,27 @@ PANEL_STYLE = """
 .cls-blocked{color:#8a6d1f}
 .basisnote{font-size:.85rem;color:#555;margin:0 0 .7rem}
 .bodycap{display:none}
+.figtbl{width:100%;border-collapse:collapse;margin:.9rem 0 0;font-size:.88rem}
+.figtbl th,.figtbl td{text-align:left;vertical-align:top;padding:.55rem .7rem .55rem 0;
+ border-top:1px solid #e6e3de}
+.figtbl thead th{font-size:.76rem;letter-spacing:.05em;text-transform:uppercase;
+ color:#666;font-weight:600;border-top:none;padding-top:0}
+.figtbl tbody th{width:38%;font-weight:600}
+.figtbl td{color:#555}
+.pct{display:block;font-weight:700;font-size:1rem;margin-top:.1rem}
+.cite{display:block;font-size:.8rem;opacity:.75;margin-top:.25rem}
+@media(max-width:32rem){
+ .figtbl,.figtbl tbody,.figtbl tr,.figtbl th,.figtbl td{display:block;width:auto}
+ .figtbl thead{display:none}
+ .figtbl tbody th{border-top:1px solid #e6e3de;padding-bottom:.15rem}
+ .figtbl tbody td{border-top:none;padding-top:0}}
 @media(prefers-color-scheme:dark){
  .refonly,.refused{background:#241f12;color:#e0d4ad;border-color:#a8862b}
  .vptabs{background:#26262c}.abtabs label{border-color:#3d3c45}
  .stats{border-color:#33323a}.stats span,.basisnote,.ablead{color:#a8a5a0}
- .cls-blocked{color:#d9b45a}}
+ .cls-blocked{color:#d9b45a}
+ .figtbl th,.figtbl td{border-color:#33323a}.figtbl td{color:#a8a5a0}
+ .figtbl thead th{color:#a8a5a0}}
 @media print{
  /* A printed record must be complete: every tab and every cohort basis, each
     captioned so the reader knows which finding they are looking at. */
@@ -425,7 +443,9 @@ FIGURES_AUDIENCE = "clinician"
 FIGURE_CAPTION = (
     "Each figure is the published penetrance for the cohort named beside it — not a "
     "score, not a prediction, and not this person's risk. Cohorts ascertained through "
-    "an already-affected relative run systematically higher than population-based ones."
+    "an already-affected relative run systematically higher than population-based ones. "
+    "The chromosome drawing is schematic: the band is placed by arm and number, not to "
+    "scale, and no coordinate is claimed."
 )
 
 
@@ -656,13 +676,13 @@ def band_position(cytoband: str) -> tuple[float, str] | None:
     return 0.50 + reach * 0.44, "q"
 
 
-def ideogram_svg(cytoband: str, accent: str) -> str:
+def ideogram_svg(cytoband: str, accent: str, x: float, y: float,
+                 w: float, h: float) -> str:
     """A schematic chromosome with the reported band marked. Not to scale."""
     # Everything is currentColor at low opacity so the schematic reads correctly
     # in both themes. Hardcoded light fills turned the chromosome into a glaring
     # white bar on the dark page.
-    x, y, w, h = 14, 16, 24, 190
-    parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" '
+    parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{w/2:.0f}" '
              f'fill="currentColor" opacity=".13"/>']
     for frac in (0.10, 0.22, 0.62, 0.80):
         parts.append(f'<rect x="{x}" y="{y + h*frac:.0f}" width="{w}" height="9" '
@@ -671,13 +691,36 @@ def ideogram_svg(cytoband: str, accent: str) -> str:
                  f'fill="currentColor" opacity=".2"/>')
     pos = band_position(cytoband)
     if pos:
-        frac, _ = pos
-        parts.append(f'<rect x="{x-3}" y="{y + h*frac:.0f}" width="{w+6}" height="11" '
+        parts.append(f'<rect x="{x-3}" y="{y + h*pos[0]:.0f}" width="{w+6}" height="11" '
                      f'rx="3" fill="{accent}"/>')
     return "".join(parts)
 
 
-def fanout_svg(figures: list, cytoband: str, accent: str) -> str:
+def locus_caption(gene: str, cytoband: str) -> list[str]:
+    """
+    The lines printed under the ideogram: gene, chromosome, band.
+
+    The drawing used to be captioned "schematic", which named the limitation but
+    not the thing. What a reader needs off this axis is which gene, which
+    chromosome and which band; that the picture is not to scale is said once, in
+    the caption under the chart, where it does not compete with the identifiers.
+
+    Three short lines rather than one long one, because the caption is centred
+    under a 24px-wide chromosome sitting at the left edge: "Chr 10 · 10q23.31"
+    on one line runs off the canvas, and widening the left gutter to fit it
+    pushes the whole drawing out of line with the table below.
+    """
+    band = str(cytoband or "").strip()
+    m = CYTOBAND_FULL.match(band)
+    lines = [str(gene or "").strip()]
+    if m:
+        lines += [f"Chr {m.group(1)}", band]
+    elif band:
+        lines.append(band)
+    return [ln for ln in lines if ln]
+
+
+def fanout_svg(figures: list, cytoband: str, gene: str, accent: str) -> str:
     """
     Locus → variant → one bubble per condition, each bubble a published figure.
 
@@ -686,42 +729,55 @@ def fanout_svg(figures: list, cytoband: str, accent: str) -> str:
     in a clinical document is a defect, not a style.
 
     Condition names are budgeted and truncated here; the full name, the cohort,
-    the source and the retrieval date all sit in the list beneath, which wraps.
+    the source and the retrieval date all sit in the table beneath, which wraps.
     Truncating a label is safe precisely because nothing depends on it — the
     cohort statement, which must never be shortened, is never inside the SVG.
     """
     n = len(figures)
-    height = max(226, n * 74 + 56)
+    # ideo_x is small on purpose: the chromosome's left edge lines up with the
+    # left edge of the table underneath, so the block reads as one column.
+    ideo_x, ideo_w, ideo_h = 10, 24, 190
+    caption_h = 56                      # gene, chromosome, band
+    row = 74
+
+    # The ideogram is centred on the hub line, so the floor has to leave room
+    # for the caption hanging below it: ideo_y + ideo_h + caption_h <= height.
+    height = max(2 * (ideo_h + caption_h) - ideo_h + 8, n * row + 56)
     mid = height / 2
+    ideo_y = (height - ideo_h) / 2
     pos = band_position(cytoband)
-    locus_y = 16 + 190 * (pos[0] if pos else 0.5)
-    hub_x, bub_x, label_x = 200, 330, 368
+    locus_y = ideo_y + ideo_h * (pos[0] if pos else 0.5)
+    hub_x, bub_x, label_x = 190, 310, 348
+    centre_x = ideo_x + ideo_w / 2
 
-    out = [ideogram_svg(cytoband, accent)]
-    out.append('<text x="26" y="220" font-size="10" fill="currentColor" opacity=".6" '
-               'text-anchor="middle">schematic</text>')
+    out = [ideogram_svg(cytoband, accent, ideo_x, ideo_y, ideo_w, ideo_h)]
 
-    # Decorative strand between locus and hub. It asserts nothing and is hidden
-    # from assistive technology rather than read out as meaningless geometry.
-    for i in range(9):
-        sy = mid - 68 + i * 17
-        out.append(f'<circle cx="{112 + (i % 2) * 20}" cy="{sy:.0f}" r="3.2" '
-                   f'fill="currentColor" opacity=".22" aria-hidden="true"/>')
-        out.append(f'<circle cx="{132 - (i % 2) * 20}" cy="{sy:.0f}" r="3.2" '
-                   f'fill="currentColor" opacity=".22" aria-hidden="true"/>')
+    cap_lines = locus_caption(gene, cytoband)
+    for j, line in enumerate(cap_lines):
+        first = j == 0
+        out.append(
+            f'<text x="{centre_x}" y="{ideo_y + ideo_h + 20 + j * 15:.0f}" '
+            f'font-size="{12.5 if first else 10.5}" text-anchor="middle" '
+            f'fill="currentColor"'
+            + (' font-weight="600"' if first else ' opacity=".65"')
+            + f'>{esc(line)}</text>')
 
-    out.append(f'<path d="M44 {locus_y:.0f} C96 {locus_y:.0f} 150 {mid:.0f} '
+    out.append(f'<path d="M{ideo_x + ideo_w + 6} {locus_y:.0f} '
+               f'C{hub_x - 70} {locus_y:.0f} {hub_x - 60} {mid:.0f} '
                f'{hub_x} {mid:.0f}" fill="none" stroke="{accent}" stroke-width="2" '
                f'stroke-dasharray="5 4"/>')
     out.append(f'<circle cx="{hub_x}" cy="{mid:.0f}" r="6" fill="{accent}"/>')
 
+    # Rows sit on an exact rhythm centred on the hub, so the fan is symmetrical
+    # however many conditions there are.
+    first = mid - (n - 1) * row / 2
     for i, f in enumerate(figures):
-        by = 42 + i * 74 + (height - (n * 74 + 4)) / 2
+        by = first + i * row
         pct = float(f["percent"])
         name = str(f["condition"])
-        shown = name if len(name) <= 30 else name[:29].rstrip() + "…"
-        out.append(f'<path d="M{hub_x+6} {mid:.0f} C{hub_x+64} {mid:.0f} '
-                   f'{bub_x-64} {by:.0f} {bub_x-26} {by:.0f}" fill="none" '
+        shown = name if len(name) <= 36 else name[:35].rstrip() + "…"
+        out.append(f'<path d="M{hub_x+6} {mid:.0f} C{hub_x+60} {mid:.0f} '
+                   f'{bub_x-60} {by:.0f} {bub_x-26} {by:.0f}" fill="none" '
                    f'stroke="{accent}" stroke-width="2" stroke-dasharray="5 4"/>')
         out.append(f'<circle cx="{bub_x}" cy="{by:.0f}" r="25" fill="none" '
                    f'stroke="{accent}" stroke-width="2.5"/>')
@@ -730,12 +786,12 @@ def fanout_svg(figures: list, cytoband: str, accent: str) -> str:
         out.append(f'<text x="{label_x}" y="{by+5:.0f}" font-size="13.5" '
                    f'fill="currentColor">{esc(shown)}</text>')
 
+    where = " ".join(cap_lines)
     label = "; ".join(f'{esc(f["condition"])} {float(f["percent"]):g} per cent'
                       for f in figures)
-    return (f'<svg viewBox="0 0 620 {height}" width="100%" role="img" '
-            f'aria-label="Published penetrance by condition: {label}">'
+    return (f'<svg viewBox="0 0 620 {height:.0f}" width="100%" role="img" '
+            f'aria-label="{esc(where)}. Published penetrance by condition: {label}">'
             + "".join(out) + "</svg>")
-
 
 
 BASIS_ORDER = ("clinic", "population", "unspecified")
@@ -800,6 +856,28 @@ def panel_findings(data: dict) -> list[dict]:
     }]
 
 
+def figure_table(figures: list) -> str:
+    """
+    The figures as a two-column table: what was measured, and in whom.
+
+    A prose line per figure ran the condition, the number, the cohort and the
+    citation together, so the cohort — the part that decides what the number
+    means — read as an aside. Two columns separate the claim from its evidence
+    and let the eye compare cohorts down a single edge.
+    """
+    rows = "".join(
+        f'<tr><th scope="row">{esc(f["condition"])}'
+        f'<span class="pct">{float(f["percent"]):g}%</span></th>'
+        f'<td>{esc(f["cohort"])}'
+        f'<span class="cite">{esc(f["source"])} · retrieved '
+        f'{esc(f["retrieved"])}</span></td></tr>'
+        for f in figures)
+    return ('<table class="figtbl"><thead><tr>'
+            '<th scope="col">Condition</th>'
+            '<th scope="col">Measured in, and source</th>'
+            f'</tr></thead><tbody>{rows}</tbody></table>')
+
+
 def risk_panel_html(data: dict) -> tuple[str, list[str]]:
     """
     The interactive panel. Returns (html, notes for stderr).
@@ -821,6 +899,10 @@ def risk_panel_html(data: dict) -> tuple[str, list[str]]:
     for i, finding in enumerate(findings):
         label = str(finding.get("label") or f"Finding {i + 1}").strip()
         locus = str(finding.get("locus") or "").strip()
+        # `gene` is explicit when given; otherwise the leading token of the
+        # label, which is the gene symbol in every shape a report writes
+        # ("BRCA1 c.190T>C", "MYBPC3 p.Arg502Trp").
+        gene = str(finding.get("gene") or label.split()[0] if label else "").strip()
         classification = str(finding.get("classification") or "").strip()
         checked = " checked" if i == 0 else ""
 
@@ -889,12 +971,8 @@ def risk_panel_html(data: dict) -> tuple[str, list[str]]:
             if len(bases) > 1:
                 body.append(f'<p class="basisnote">{esc(BASIS_NOTES[b])}</p>')
             body.append('<div class="chart">'
-                        + fanout_svg(figs, locus, "#5B7A99")
-                        + "".join(
-                            f'<div class="src"><strong>{esc(f["condition"])}</strong> — '
-                            f'{float(f["percent"]):g}%, measured in {esc(f["cohort"])}. '
-                            f'{esc(f["source"])} (retrieved {esc(f["retrieved"])})</div>'
-                            for f in figs)
+                        + fanout_svg(figs, locus, gene, "#5B7A99")
+                        + figure_table(figs)
                         + "</div>")
             body.append("</div>")
 

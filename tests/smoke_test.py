@@ -524,6 +524,54 @@ PANEL_CASES: list[tuple[str, dict, str, list[str], list[str]]] = [
         "clinician", ["72%", "No figures are shown"], ["28%"],
     ),
     (
+        "the ideogram is captioned with gene, chromosome and band",
+        {"risk_panel": {"findings": [{
+            "label": "PTEN c.697C>T", "gene": "PTEN", "locus": "10q23.31",
+            "classification": "Pathogenic",
+            "figures": [{"condition": "Thyroid cancer, lifetime", "percent": 28,
+                         "cohort": "PHTS patients", "source": "S 2025",
+                         "retrieved": "2026-08-22"}]}]}},
+        "clinician", [">PTEN<", ">Chr 10<", ">10q23.31<"],
+        # The drawing used to be captioned "schematic", which named the
+        # limitation instead of the locus. That statement moved to the caption
+        # under the chart, where it does not compete with the identifiers.
+        [">schematic<"],
+    ),
+    (
+        "gene falls back to the first token of the label",
+        {"risk_panel": {"findings": [{
+            "label": "MYBPC3 c.1504C>T", "locus": "11p11.2",
+            "classification": "Pathogenic",
+            "figures": [{"condition": "HCM, lifetime", "percent": 40,
+                         "cohort": "probands", "source": "S 2025",
+                         "retrieved": "2026-08-22"}]}]}},
+        "clinician", [">MYBPC3<", ">Chr 11<"], [],
+    ),
+    (
+        "figures are listed as a two-column table, not prose",
+        {"risk_panel": {"findings": [{
+            "label": "PTEN", "gene": "PTEN", "locus": "10q23.31",
+            "classification": "Pathogenic",
+            "figures": [{"condition": "Thyroid cancer, lifetime", "percent": 28,
+                         "cohort": "PHTS patients", "source": "S 2025",
+                         "retrieved": "2026-08-22"}]}]}},
+        "clinician",
+        ["figtbl", "Measured in, and source", "<th scope=\"row\">", "PHTS patients"],
+        [],
+    ),
+    (
+        "the decorative strand is gone",
+        {"risk_panel": {"findings": [{
+            "label": "PTEN", "gene": "PTEN", "locus": "10q23.31",
+            "classification": "Pathogenic",
+            "figures": [{"condition": "Thyroid cancer, lifetime", "percent": 28,
+                         "cohort": "PHTS patients", "source": "S 2025",
+                         "retrieved": "2026-08-22"}]}]}},
+        # Decorative geometry hidden from assistive technology was the only
+        # thing carrying aria-hidden, so its absence is the assertion.
+        "clinician", [], ["aria-hidden"],
+    ),
+    (
         "an actionability verdict is refused from the tier slot",
         {"risk_panel": {"findings": [{
             "label": "BRCA1", "classification": "Pathogenic",
