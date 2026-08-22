@@ -198,3 +198,41 @@ Who holds each action.]
 file with a page break between, so the clinician section can be handed over intact.
 
 Deliver the family version first in conversation. That is who is usually asking.
+
+---
+
+## The interactive figure panel
+
+Passed as `risk_panel` to `render_brief.py` when one report carries several findings, or
+one condition has figures from two cohorts. Renders on the **clinician** page only, as
+profile tabs plus a cohort-basis toggle built from radio inputs and CSS — no scripts, so
+the page opens offline, prints, and survives being emailed.
+
+```json
+"risk_panel": {"findings": [{
+  "label": "BRCA1 c.190T>C",
+  "locus": "17q21.31",
+  "classification": "Pathogenic",
+  "provenance": {"stars": 2, "submitters": 4, "conflicts": false,
+                 "last_evaluated": "2026-05-14"},
+  "surveillance_tier": 1,
+  "figures": [{"...": "...", "basis": "clinic"},
+              {"...": "...", "basis": "population"}]
+}]}
+```
+
+| Field | Meaning |
+|---|---|
+| `label` | What the tab says. The gene and variant as the report writes them |
+| `locus` | Cytoband, for the schematic ideogram. Schematic only — no coordinate is claimed |
+| `classification` | The reporting laboratory's call. Gates this finding's figures |
+| `provenance` | What you retrieved at Step 2b. Whatever is missing is simply absent — padding it out defeats the point of the slot |
+| `surveillance_tier` | 1, 2 or 3. The evidence tier, never an actionability rating |
+| `figures[].basis` | `clinic`, `population`, or absent. Two or more distinct bases raise the toggle |
+
+`risk_figures` (the flat list) is wrapped into a single-finding panel automatically, so
+both shapes take the same code path and cannot disagree about a variant.
+
+Each finding is gated separately, and **a refused finding keeps its tab** — a tab saying
+why a VUS has no figure is more use than a finding quietly missing from the selector.
+

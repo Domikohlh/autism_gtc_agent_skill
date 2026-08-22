@@ -131,6 +131,86 @@ associations (Tier 2). Do not lecture about why. Something like:
 
 ---
 
+## Risk figures, and why there is no score
+
+The chart is the highest-leverage thing this skill draws and the easiest thing it draws
+to misread. One distinction governs all of it:
+
+> **A published penetrance figure describes a cohort. A score describes a person.
+> This skill produces the first and never the second.**
+
+There is no monogenic risk score here, the phrase should not appear in output, and
+nothing in the pipeline computes one. What can be shown is a **penetrance or lifetime
+risk figure that was published for a named cohort**, reproduced with its source, its
+retrieval date, and the cohort it was measured in. That is a citation with a bar drawn
+next to it.
+
+The moment a figure is combined with another, averaged, converted from a hazard ratio,
+adjusted for family history, or restated as *"your risk"*, it stops being a citation and
+becomes a prediction about an individual — which is the diagnostic act this skill exists
+in order not to perform. The chart is a bibliography, drawn to scale.
+
+### What may be charted — all five, or it is refused
+
+1. **A condition**, named as the source names it
+2. **A percentage that appears in the source.** Not derived, not averaged, not converted
+   from a hazard ratio, relative risk or fold-change
+3. **The cohort** it was measured in, including how those people came to be studied
+4. **The source**, named
+5. **The retrieval date**, from this session
+
+`render_brief.py` enforces all five. A figure missing any of them is not drawn — it is
+listed as uncited underneath, because a bar is read as a fact and an uncited number on a
+chart is the most persuasive way this tool could mislead someone.
+
+### The classification gate
+
+A penetrance figure means something only if the variant is established to cause the
+condition. So the whole block is gated on **the reporting laboratory's classification**,
+not on anything you concluded:
+
+- **Pathogenic / likely pathogenic** → figures may be charted
+- **VUS, likely benign, benign, conflicting, or no classification recorded** → the block
+  is refused entirely and the page says why
+
+A VUS carries no risk information by definition (Tier 3). Attaching a syndrome's
+penetrance to a VUS is the most damaging thing this tool could draw: it converts *"we do
+not know"* into a coloured bar, and a coloured bar is what gets remembered.
+
+### Ascertainment — state it under every bar
+
+Penetrance figures for most genes come from **cohorts ascertained because someone was
+already affected** — families that reached a clinic through a cancer, a seizure, a sudden
+death. Penetrance measured that way runs systematically higher than penetrance in someone
+whose variant turned up incidentally on a broad test, and for several genes population-based
+estimates have come in far lower than the clinic-based ones.
+
+This is not a caveat to bury at the bottom. It is why the cohort field is mandatory: a bar
+labelled 35% sitting above the line *"measured in families ascertained through an affected
+relative"* tells the reader something true that the bar alone does not.
+
+### If asked for a risk score
+
+Decline in one sentence and give what exists. Do not lecture about why.
+
+> "I can't give you a risk score — there isn't one for a single-gene finding, and a number
+> like that would look far more precise than anything actually known. What I can give you
+> is the published figures for [condition], who they were measured in, and where they come
+> from."
+
+Then give the Tier 1 picture, which is what the person needed in the first place.
+
+### Never
+
+- A combined, overall or headline figure you assembled from more than one source
+- A figure adjusted for this person's age, sex, family history or anything else
+- A figure attached to a VUS, or to a variant with no recorded classification
+- A figure recalled rather than retrieved this session
+- A polygenic score, under any framing whatsoever (Tier 3, above)
+- The words *"your risk"*. It is the cohort's figure, cited
+
+---
+
 ## Secondary and incidental findings
 
 Exome and genome sequencing can surface findings unrelated to the reason for testing —

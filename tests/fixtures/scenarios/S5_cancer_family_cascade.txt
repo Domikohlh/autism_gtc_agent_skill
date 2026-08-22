@@ -1,0 +1,14 @@
+Synthetic test document — fictional situation, generated for software testing. Not a real person.
+
+Message from an adult patient
+-----------------------------
+
+I'm 47. I had bowel cancer last year and the genetics clinic tested me afterwards. The
+letter says Lynch syndrome and names a gene, MLH1.
+
+What I actually want to know is what this means for my two children, who are 19 and 22.
+The letter says "cascade testing should be offered to first-degree relatives" but doesn't
+say what that involves, when they should do it, or whether they have to.
+
+I'm in England. Nobody has contacted them and I don't know if that's my job or the
+clinic's.

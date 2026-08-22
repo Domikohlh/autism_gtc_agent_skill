@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "Structured companion to references/gene_index.md. Routes a gene to authoritative sources and care domains. Deliberately contains NO screening ages, intervals, or drug doses — those must be retrieved from the cited source with a retrieval date.",
+    "description": "A PITFALL REGISTRY, not a coverage claim. These are genes and regions where the obvious reading is wrong, or where a published protocol is easy to miss — curated because someone getting it wrong causes harm. A gene's ABSENCE here says nothing about that gene: run references/retrieval_protocol.md for anything not listed, and check here afterwards for traps. Holds NO screening ages, intervals or doses; those are retrieved from the cited source with a date.",
     "curated": "2026-08-16",
     "universal_sources": {
       "GeneReviews": "https://www.ncbi.nlm.nih.gov/books/NBK1116/",
@@ -10,269 +10,842 @@
       "SFARI Gene": "https://gene.sfari.org/",
       "Simons Searchlight": "https://www.simonssearchlight.org/",
       "ClinicalTrials.gov": "https://clinicaltrials.gov/"
-    }
+    },
+    "scope": "Curation began with neurodevelopmental conditions, so the entries skew that way. The retrieval protocol is disease-general and is the primary path for cancer, cardiac, metabolic, chromosomal and any other presentation."
   },
   "genes": {
     "PTEN": {
       "syndrome": "PTEN Hamartoma Tumor Syndrome (PHTS)",
-      "aliases": ["Cowden syndrome", "Bannayan-Riley-Ruvalcaba syndrome"],
-      "tier1_domains": ["thyroid", "breast", "renal", "endometrial", "colorectal", "skin", "overgrowth"],
+      "aliases": [
+        "Cowden syndrome",
+        "Bannayan-Riley-Ruvalcaba syndrome"
+      ],
+      "tier1_domains": [
+        "thyroid",
+        "breast",
+        "renal",
+        "endometrial",
+        "colorectal",
+        "skin",
+        "overgrowth"
+      ],
       "tier2_domains": [],
       "sources": [
-        {"name": "International PHTS Consensus Guidelines Working Group", "journal": "Clinical Cancer Research", "year": 2025, "url": "https://aacrjournals.org/clincancerres/article/31/9/1754/761247/Cancer-and-Overgrowth-Manifestations-of-PTEN"},
-        {"name": "Update on Pediatric Surveillance Recommendations", "journal": "Clinical Cancer Research", "year": 2025, "url": "https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations"},
-        {"name": "German pediatric guideline", "journal": "Molecular and Cellular Pediatrics", "year": 2022, "url": "https://link.springer.com/article/10.1186/s40348-022-00135-1"},
-        {"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1488/"}
+        {
+          "name": "International PHTS Consensus Guidelines Working Group",
+          "journal": "Clinical Cancer Research",
+          "year": 2025,
+          "url": "https://aacrjournals.org/clincancerres/article/31/9/1754/761247/Cancer-and-Overgrowth-Manifestations-of-PTEN"
+        },
+        {
+          "name": "Update on Pediatric Surveillance Recommendations",
+          "journal": "Clinical Cancer Research",
+          "year": 2025,
+          "url": "https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations"
+        },
+        {
+          "name": "German pediatric guideline",
+          "journal": "Molecular and Cellular Pediatrics",
+          "year": 2022,
+          "url": "https://link.springer.com/article/10.1186/s40348-022-00135-1"
+        },
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1488/"
+        }
       ],
-      "traps": ["Macrocephaly with NDD may be the only childhood feature, so cancer risk is easily overlooked. Surveillance begins in childhood — this is Tier 1 and must be surfaced."],
-      "organisations": [{"name": "PTEN Hamartoma Tumor Syndrome Foundation", "url": "https://www.ptenfoundation.org/"}]
+      "traps": [
+        "Macrocephaly with NDD may be the only childhood feature, so cancer risk is easily overlooked. Surveillance begins in childhood — this is Tier 1 and must be surfaced."
+      ],
+      "organisations": [
+        {
+          "name": "PTEN Hamartoma Tumor Syndrome Foundation",
+          "url": "https://www.ptenfoundation.org/"
+        }
+      ]
     },
     "TSC1": {
       "syndrome": "Tuberous Sclerosis Complex",
-      "tier1_domains": ["renal angiomyolipoma", "SEGA", "cardiac rhabdomyoma", "pulmonary LAM", "epilepsy", "skin", "ophthalmic", "neuropsychiatric (TAND)"],
+      "tier1_domains": [
+        "renal angiomyolipoma",
+        "SEGA",
+        "cardiac rhabdomyoma",
+        "pulmonary LAM",
+        "epilepsy",
+        "skin",
+        "ophthalmic",
+        "neuropsychiatric (TAND)"
+      ],
       "tier2_domains": [],
       "sources": [
-        {"name": "Update on Pediatric Surveillance Recommendations", "journal": "Clinical Cancer Research", "year": 2025, "url": "https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations"},
-        {"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1220/"}
+        {
+          "name": "Update on Pediatric Surveillance Recommendations",
+          "journal": "Clinical Cancer Research",
+          "year": 2025,
+          "url": "https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations"
+        },
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1220/"
+        }
       ],
-      "traps": ["mTOR inhibitors are an established targeted therapy — one of very few in this space. Worth surfacing that targeted treatment exists; do not state doses."],
-      "organisations": [{"name": "Tuberous Sclerosis Alliance", "url": "https://www.tsalliance.org/"}]
+      "traps": [
+        "mTOR inhibitors are an established targeted therapy — one of very few in this space. Worth surfacing that targeted treatment exists; do not state doses."
+      ],
+      "organisations": [
+        {
+          "name": "Tuberous Sclerosis Alliance",
+          "url": "https://www.tsalliance.org/"
+        }
+      ]
     },
-    "TSC2": {"same_as": "TSC1"},
+    "TSC2": {
+      "same_as": "TSC1"
+    },
     "NF1": {
       "syndrome": "Neurofibromatosis type 1",
-      "tier1_domains": ["optic pathway glioma", "plexiform neurofibroma", "MPNST", "blood pressure", "skeletal", "ophthalmic"],
-      "tier2_domains": ["learning and attention difficulties"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1109/"}],
-      "traps": ["Learning and attention difficulties are core features, not incidental."],
-      "organisations": [{"name": "Children's Tumor Foundation", "url": "https://www.ctf.org/"}]
+      "tier1_domains": [
+        "optic pathway glioma",
+        "plexiform neurofibroma",
+        "MPNST",
+        "blood pressure",
+        "skeletal",
+        "ophthalmic"
+      ],
+      "tier2_domains": [
+        "learning and attention difficulties"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1109/"
+        }
+      ],
+      "traps": [
+        "Learning and attention difficulties are core features, not incidental."
+      ],
+      "organisations": [
+        {
+          "name": "Children's Tumor Foundation",
+          "url": "https://www.ctf.org/"
+        }
+      ]
     },
     "DICER1": {
       "syndrome": "DICER1 tumour predisposition",
-      "tier1_domains": ["pleuropulmonary blastoma", "thyroid", "ovarian"],
+      "tier1_domains": [
+        "pleuropulmonary blastoma",
+        "thyroid",
+        "ovarian"
+      ],
       "tier2_domains": [],
       "sources": [
-        {"name": "Update on Pediatric Surveillance Recommendations", "journal": "Clinical Cancer Research", "year": 2025, "url": "https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations"},
-        {"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK196157/"}
+        {
+          "name": "Update on Pediatric Surveillance Recommendations",
+          "journal": "Clinical Cancer Research",
+          "year": 2025,
+          "url": "https://aacrjournals.org/clincancerres/article/31/2/234/751094/Update-on-Pediatric-Surveillance-Recommendations"
+        },
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK196157/"
+        }
       ],
-      "traps": ["More often a secondary finding than a primary NDD result — apply the secondary findings rules in risk_layer_policy.md."],
+      "traps": [
+        "More often a secondary finding than a primary NDD result — apply the secondary findings rules in risk_layer_policy.md."
+      ],
       "organisations": []
     },
     "MECP2": {
       "syndrome": "Rett syndrome",
-      "tier1_domains": ["cardiac QT", "scoliosis", "breathing dysrhythmia", "bone density", "nutrition/GI", "epilepsy"],
+      "tier1_domains": [
+        "cardiac QT",
+        "scoliosis",
+        "breathing dysrhythmia",
+        "bone density",
+        "nutrition/GI",
+        "epilepsy"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1497/"}],
-      "traps": ["QT prolongation has medication implications.", "An approved targeted therapy exists — check current status before describing it; do not assert from memory."],
-      "organisations": [{"name": "International Rett Syndrome Foundation", "url": "https://www.rettsyndrome.org/"}]
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1497/"
+        }
+      ],
+      "traps": [
+        "QT prolongation has medication implications.",
+        "An approved targeted therapy exists — check current status before describing it; do not assert from memory."
+      ],
+      "organisations": [
+        {
+          "name": "International Rett Syndrome Foundation",
+          "url": "https://www.rettsyndrome.org/"
+        }
+      ]
     },
     "SCN2A": {
       "syndrome": "SCN2A-related disorders (autism/ID and/or epilepsy)",
-      "tier1_domains": ["epilepsy management", "developmental support", "movement"],
+      "tier1_domains": [
+        "epilepsy management",
+        "developmental support",
+        "movement"
+      ],
       "tier2_domains": [],
       "sources": [
-        {"name": "Expanded clinical phenotype spectrum correlates with variant function in SCN2A-related disorders", "journal": "Brain", "year": 2024, "url": "https://academic.oup.com/brain/article/147/8/2761/7656659"},
-        {"name": "Precision medicine for sodium channelopathy-related autism and epilepsy", "journal": "Trends in Molecular Medicine", "year": 2025, "url": "https://www.cell.com/trends/molecular-medicine/abstract/S1471-4914(25)00216-3"},
-        {"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK594499/"}
+        {
+          "name": "Expanded clinical phenotype spectrum correlates with variant function in SCN2A-related disorders",
+          "journal": "Brain",
+          "year": 2024,
+          "url": "https://academic.oup.com/brain/article/147/8/2761/7656659"
+        },
+        {
+          "name": "Precision medicine for sodium channelopathy-related autism and epilepsy",
+          "journal": "Trends in Molecular Medicine",
+          "year": 2025,
+          "url": "https://www.cell.com/trends/molecular-medicine/abstract/S1471-4914(25)00216-3"
+        },
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK594499/"
+        }
       ],
       "traps": [
         "CRITICAL: direction of effect changes the drug. Gain-of-function variants (typically neonatal-onset seizures) showed 94% good-to-excellent phenytoin response; loss-of-function variants (typically autism/ID, later or no seizures) showed 0% (Brain, 2024).",
         "You CANNOT infer direction from the variant notation alone — it requires functional data. State that the distinction exists and is clinically decisive, and route it to genetics/neurology. Never guess a direction. Never imply a drug choice.",
         "Individualised antisense oligonucleotide therapy has reached patients (Nature Medicine, 2026) and the strategy depended on functional class. Surface as an active area, not an available treatment."
       ],
-      "organisations": [{"name": "FamilieSCN2A Foundation", "url": "https://www.scn2a.org/"}]
+      "organisations": [
+        {
+          "name": "FamilieSCN2A Foundation",
+          "url": "https://www.scn2a.org/"
+        }
+      ]
     },
     "SCN1A": {
       "syndrome": "SCN1A-related disorders (includes Dravet syndrome)",
-      "tier1_domains": ["epilepsy management", "SUDEP counselling where indicated", "developmental support"],
+      "tier1_domains": [
+        "epilepsy management",
+        "SUDEP counselling where indicated",
+        "developmental support"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1318/"}],
-      "traps": ["URGENT: sodium channel blockers are generally avoided in Dravet syndrome. This is well established and clinically time-sensitive — make sure the neurology team is engaged. Do not state a regimen."],
-      "organisations": [{"name": "Dravet Syndrome Foundation", "url": "https://dravetfoundation.org/"}]
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1318/"
+        }
+      ],
+      "traps": [
+        "URGENT: sodium channel blockers are generally avoided in Dravet syndrome. This is well established and clinically time-sensitive — make sure the neurology team is engaged. Do not state a regimen."
+      ],
+      "organisations": [
+        {
+          "name": "Dravet Syndrome Foundation",
+          "url": "https://dravetfoundation.org/"
+        }
+      ]
     },
     "SCN8A": {
       "syndrome": "SCN8A-related disorders",
-      "tier1_domains": ["epilepsy management", "developmental support"],
+      "tier1_domains": [
+        "epilepsy management",
+        "developmental support"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK379665/"}],
-      "traps": ["Same direction-of-effect problem as SCN2A. Do not infer gain vs loss from notation."],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK379665/"
+        }
+      ],
+      "traps": [
+        "Same direction-of-effect problem as SCN2A. Do not infer gain vs loss from notation."
+      ],
       "organisations": []
     },
     "GRIN2B": {
       "syndrome": "GRIN2B-related neurodevelopmental disorder",
-      "tier1_domains": ["epilepsy", "developmental support", "movement"],
+      "tier1_domains": [
+        "epilepsy",
+        "developmental support",
+        "movement"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK501979/"}],
-      "traps": ["Gain- vs loss-of-function determines management approach. Requires functional data — do not infer."],
-      "organisations": [{"name": "CureGRIN Foundation", "url": "https://curegrin.org/"}]
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK501979/"
+        }
+      ],
+      "traps": [
+        "Gain- vs loss-of-function determines management approach. Requires functional data — do not infer."
+      ],
+      "organisations": [
+        {
+          "name": "CureGRIN Foundation",
+          "url": "https://curegrin.org/"
+        }
+      ]
     },
-    "GRIN2A": {"same_as": "GRIN2B"},
+    "GRIN2A": {
+      "same_as": "GRIN2B"
+    },
     "CACNA1C": {
       "syndrome": "CACNA1C-related disorders (includes Timothy syndrome)",
-      "tier1_domains": ["cardiac conduction", "developmental support"],
+      "tier1_domains": [
+        "cardiac conduction",
+        "developmental support"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1403/"}],
-      "traps": ["URGENT: cardiac conduction involvement. Any suspicion warrants prompt cardiology input. Put this first in any output; do not soften it."],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1403/"
+        }
+      ],
+      "traps": [
+        "URGENT: cardiac conduction involvement. Any suspicion warrants prompt cardiology input. Put this first in any output; do not soften it."
+      ],
       "organisations": []
     },
     "STXBP1": {
       "syndrome": "STXBP1-related disorders",
-      "tier1_domains": ["epilepsy", "movement disorder", "developmental support"],
+      "tier1_domains": [
+        "epilepsy",
+        "movement disorder",
+        "developmental support"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK396561/"}],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK396561/"
+        }
+      ],
       "traps": [],
-      "organisations": [{"name": "STXBP1 Foundation", "url": "https://www.stxbp1disorders.org/"}]
+      "organisations": [
+        {
+          "name": "STXBP1 Foundation",
+          "url": "https://www.stxbp1disorders.org/"
+        }
+      ]
     },
     "SHANK3": {
       "syndrome": "Phelan-McDermid syndrome (22q13 deletion)",
-      "tier1_domains": ["renal", "cardiac", "hearing", "vision", "epilepsy", "lymphoedema"],
-      "tier2_domains": ["adolescent/adult regression", "catatonia"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1198/"}],
-      "traps": ["Regression and catatonia in adolescence/adulthood are recognised features. Families who know this seek help far earlier — a strong example of Tier 2 content preventing harm. Frame per Tier 2 rules: more common, not inevitable, treatable, who to tell."],
-      "organisations": [{"name": "Phelan-McDermid Syndrome Foundation", "url": "https://pmsf.org/"}]
+      "tier1_domains": [
+        "renal",
+        "cardiac",
+        "hearing",
+        "vision",
+        "epilepsy",
+        "lymphoedema"
+      ],
+      "tier2_domains": [
+        "adolescent/adult regression",
+        "catatonia"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1198/"
+        }
+      ],
+      "traps": [
+        "Regression and catatonia in adolescence/adulthood are recognised features. Families who know this seek help far earlier — a strong example of Tier 2 content preventing harm. Frame per Tier 2 rules: more common, not inevitable, treatable, who to tell."
+      ],
+      "organisations": [
+        {
+          "name": "Phelan-McDermid Syndrome Foundation",
+          "url": "https://pmsf.org/"
+        }
+      ]
     },
     "SYNGAP1": {
       "syndrome": "SYNGAP1-related intellectual disability",
-      "tier1_domains": ["epilepsy", "developmental support"],
-      "tier2_domains": ["sleep", "GI", "pain insensitivity"],
-      "sources": [
-        {"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK537721/"},
-        {"name": "SFARI ASO development programme", "url": "https://www.sfari.org/funded-project/development-of-antisense-oligonucleotides-for-syngap1-haploinsufficiency-associated-with-autism-spectrum-disorder-and-intellectual-disability/"}
+      "tier1_domains": [
+        "epilepsy",
+        "developmental support"
       ],
-      "traps": ["Strong patient organisation and active therapeutic pipeline. Registry enrolment is meaningful for these families — surface it."],
-      "organisations": [{"name": "SynGAP Research Fund", "url": "https://curesyngap1.org/"}]
+      "tier2_domains": [
+        "sleep",
+        "GI",
+        "pain insensitivity"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK537721/"
+        },
+        {
+          "name": "SFARI ASO development programme",
+          "url": "https://www.sfari.org/funded-project/development-of-antisense-oligonucleotides-for-syngap1-haploinsufficiency-associated-with-autism-spectrum-disorder-and-intellectual-disability/"
+        }
+      ],
+      "traps": [
+        "Strong patient organisation and active therapeutic pipeline. Registry enrolment is meaningful for these families — surface it."
+      ],
+      "organisations": [
+        {
+          "name": "SynGAP Research Fund",
+          "url": "https://curesyngap1.org/"
+        }
+      ]
     },
     "CHD8": {
       "syndrome": "CHD8-related neurodevelopmental disorder",
       "tier1_domains": [],
-      "tier2_domains": ["macrocephaly", "GI (constipation, prominent and under-treated)", "sleep"],
-      "sources": [{"name": "SFARI Gene", "url": "https://gene.sfari.org/database/human-gene/CHD8"}],
-      "traps": ["Constipation is prominent and routinely under-treated in this group — practical and worth raising."],
+      "tier2_domains": [
+        "macrocephaly",
+        "GI (constipation, prominent and under-treated)",
+        "sleep"
+      ],
+      "sources": [
+        {
+          "name": "SFARI Gene",
+          "url": "https://gene.sfari.org/database/human-gene/CHD8"
+        }
+      ],
+      "traps": [
+        "Constipation is prominent and routinely under-treated in this group — practical and worth raising."
+      ],
       "organisations": []
     },
     "ADNP": {
       "syndrome": "Helsmoortel-Van der Aa syndrome",
       "tier1_domains": [],
-      "tier2_domains": ["vision", "early tooth eruption", "GI", "feeding"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK537650/"}],
-      "traps": ["Early tooth eruption is a recognised diagnostic clue."],
-      "organisations": [{"name": "ADNP Kids Research Foundation", "url": "https://adnpkids.com/"}]
+      "tier2_domains": [
+        "vision",
+        "early tooth eruption",
+        "GI",
+        "feeding"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK537650/"
+        }
+      ],
+      "traps": [
+        "Early tooth eruption is a recognised diagnostic clue."
+      ],
+      "organisations": [
+        {
+          "name": "ADNP Kids Research Foundation",
+          "url": "https://adnpkids.com/"
+        }
+      ]
     },
     "ARID1B": {
       "syndrome": "Coffin-Siris syndrome",
       "tier1_domains": [],
-      "tier2_domains": ["growth", "feeding", "hearing", "dental", "skeletal", "epilepsy"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK131811/"}],
+      "tier2_domains": [
+        "growth",
+        "feeding",
+        "hearing",
+        "dental",
+        "skeletal",
+        "epilepsy"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK131811/"
+        }
+      ],
       "traps": [],
-      "organisations": [{"name": "CSS/BAFopathy Family Support", "url": "https://cssbafopathies.org/"}]
+      "organisations": [
+        {
+          "name": "CSS/BAFopathy Family Support",
+          "url": "https://cssbafopathies.org/"
+        }
+      ]
     },
     "ANKRD11": {
       "syndrome": "KBG syndrome",
       "tier1_domains": [],
-      "tier2_domains": ["growth", "hearing", "dental", "skeletal", "epilepsy"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK573816/"}],
+      "tier2_domains": [
+        "growth",
+        "hearing",
+        "dental",
+        "skeletal",
+        "epilepsy"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK573816/"
+        }
+      ],
       "traps": [],
       "organisations": []
     },
     "DYRK1A": {
       "syndrome": "DYRK1A syndrome",
       "tier1_domains": [],
-      "tier2_domains": ["microcephaly", "feeding/growth", "epilepsy", "vision"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK333438/"}],
+      "tier2_domains": [
+        "microcephaly",
+        "feeding/growth",
+        "epilepsy",
+        "vision"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK333438/"
+        }
+      ],
       "traps": [],
-      "organisations": [{"name": "DYRK1A Syndrome International Association", "url": "https://dyrk1a.org/"}]
+      "organisations": [
+        {
+          "name": "DYRK1A Syndrome International Association",
+          "url": "https://dyrk1a.org/"
+        }
+      ]
     },
     "FMR1": {
       "syndrome": "Fragile X syndrome",
-      "tier1_domains": ["connective tissue", "mitral valve", "recurrent otitis", "seizures", "anxiety"],
+      "tier1_domains": [
+        "connective tissue",
+        "mitral valve",
+        "recurrent otitis",
+        "seizures",
+        "anxiety"
+      ],
       "tier2_domains": [],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1384/"}],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1384/"
+        }
+      ],
       "traps": [
         "Repeat expansion testing is a SEPARATE assay. A negative exome does NOT rule out Fragile X. If the indication is autism/ID and there is no separate FMR1 result, flag that gap.",
         "Premutation carriers face distinct adult-onset risks with cascade implications for relatives. Route to genetic counselling — do not elaborate, especially where the individual is a child."
       ],
-      "organisations": [{"name": "National Fragile X Foundation", "url": "https://fragilex.org/"}]
+      "organisations": [
+        {
+          "name": "National Fragile X Foundation",
+          "url": "https://fragilex.org/"
+        }
+      ]
     },
     "UBE3A": {
       "syndrome": "Angelman syndrome",
-      "tier1_domains": ["epilepsy", "sleep", "feeding", "scoliosis"],
-      "tier2_domains": ["SUDEP counselling where indicated"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1144/"}],
-      "traps": ["Active therapeutic pipeline — trials are worth surfacing."],
-      "organisations": [{"name": "Angelman Syndrome Foundation", "url": "https://www.angelman.org/"}]
+      "tier1_domains": [
+        "epilepsy",
+        "sleep",
+        "feeding",
+        "scoliosis"
+      ],
+      "tier2_domains": [
+        "SUDEP counselling where indicated"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1144/"
+        }
+      ],
+      "traps": [
+        "Active therapeutic pipeline — trials are worth surfacing."
+      ],
+      "organisations": [
+        {
+          "name": "Angelman Syndrome Foundation",
+          "url": "https://www.angelman.org/"
+        }
+      ]
     },
     "NRXN1": {
       "syndrome": "NRXN1-related neurodevelopmental disorder",
       "tier1_domains": [],
-      "tier2_domains": ["psychiatric conditions"],
-      "sources": [{"name": "SFARI Gene", "url": "https://gene.sfari.org/database/human-gene/NRXN1"}],
-      "traps": ["Deletions carry documented association with psychiatric conditions. Tier 2 framing only — be careful not to alarm, and never give a percentage you have not retrieved."],
+      "tier2_domains": [
+        "psychiatric conditions"
+      ],
+      "sources": [
+        {
+          "name": "SFARI Gene",
+          "url": "https://gene.sfari.org/database/human-gene/NRXN1"
+        }
+      ],
+      "traps": [
+        "Deletions carry documented association with psychiatric conditions. Tier 2 framing only — be careful not to alarm, and never give a percentage you have not retrieved."
+      ],
       "organisations": []
     },
-    "PPP2R5D": {"syndrome": "PPP2R5D-related neurodevelopmental disorder", "tier1_domains": [], "tier2_domains": ["epilepsy", "macrocephaly"], "sources": [{"name": "SFARI Gene", "url": "https://gene.sfari.org/database/human-gene/PPP2R5D"}], "traps": ["Emerging natural-history data rather than a surveillance protocol. Registry enrolment is often the most useful concrete action."], "organisations": [{"name": "Jordan's Guardian Angels", "url": "https://jordansguardianangels.org/"}]},
-    "SETD5": {"syndrome": "SETD5-related neurodevelopmental disorder", "tier1_domains": [], "tier2_domains": [], "sources": [{"name": "SFARI Gene", "url": "https://gene.sfari.org/database/human-gene/SETD5"}], "traps": ["Emerging natural-history data rather than a surveillance protocol."], "organisations": []},
-    "AUTS2": {"syndrome": "AUTS2 syndrome", "tier1_domains": [], "tier2_domains": ["feeding", "epilepsy"], "sources": [{"name": "SFARI Gene", "url": "https://gene.sfari.org/database/human-gene/AUTS2"}], "traps": ["Emerging natural-history data rather than a surveillance protocol."], "organisations": []},
-    "POGZ": {"syndrome": "White-Sutton syndrome", "tier1_domains": [], "tier2_domains": ["vision", "feeding", "hearing"], "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK574571/"}], "traps": [], "organisations": []},
-    "MED13L": {"syndrome": "MED13L-related neurodevelopmental disorder", "tier1_domains": ["cardiac"], "tier2_domains": ["feeding", "hearing"], "sources": [{"name": "SFARI Gene", "url": "https://gene.sfari.org/database/human-gene/MED13L"}], "traps": ["Congenital heart disease is reported — worth checking whether cardiac assessment has been done."], "organisations": []},
-    "KMT2A": {"syndrome": "Wiedemann-Steiner syndrome", "tier1_domains": [], "tier2_domains": ["growth", "feeding", "immune"], "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK575308/"}], "traps": [], "organisations": []}
+    "PPP2R5D": {
+      "syndrome": "PPP2R5D-related neurodevelopmental disorder",
+      "tier1_domains": [],
+      "tier2_domains": [
+        "epilepsy",
+        "macrocephaly"
+      ],
+      "sources": [
+        {
+          "name": "SFARI Gene",
+          "url": "https://gene.sfari.org/database/human-gene/PPP2R5D"
+        }
+      ],
+      "traps": [
+        "Emerging natural-history data rather than a surveillance protocol. Registry enrolment is often the most useful concrete action."
+      ],
+      "organisations": [
+        {
+          "name": "Jordan's Guardian Angels",
+          "url": "https://jordansguardianangels.org/"
+        }
+      ]
+    },
+    "SETD5": {
+      "syndrome": "SETD5-related neurodevelopmental disorder",
+      "tier1_domains": [],
+      "tier2_domains": [],
+      "sources": [
+        {
+          "name": "SFARI Gene",
+          "url": "https://gene.sfari.org/database/human-gene/SETD5"
+        }
+      ],
+      "traps": [
+        "Emerging natural-history data rather than a surveillance protocol."
+      ],
+      "organisations": []
+    },
+    "AUTS2": {
+      "syndrome": "AUTS2 syndrome",
+      "tier1_domains": [],
+      "tier2_domains": [
+        "feeding",
+        "epilepsy"
+      ],
+      "sources": [
+        {
+          "name": "SFARI Gene",
+          "url": "https://gene.sfari.org/database/human-gene/AUTS2"
+        }
+      ],
+      "traps": [
+        "Emerging natural-history data rather than a surveillance protocol."
+      ],
+      "organisations": []
+    },
+    "POGZ": {
+      "syndrome": "White-Sutton syndrome",
+      "tier1_domains": [],
+      "tier2_domains": [
+        "vision",
+        "feeding",
+        "hearing"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK574571/"
+        }
+      ],
+      "traps": [],
+      "organisations": []
+    },
+    "MED13L": {
+      "syndrome": "MED13L-related neurodevelopmental disorder",
+      "tier1_domains": [
+        "cardiac"
+      ],
+      "tier2_domains": [
+        "feeding",
+        "hearing"
+      ],
+      "sources": [
+        {
+          "name": "SFARI Gene",
+          "url": "https://gene.sfari.org/database/human-gene/MED13L"
+        }
+      ],
+      "traps": [
+        "Congenital heart disease is reported — worth checking whether cardiac assessment has been done."
+      ],
+      "organisations": []
+    },
+    "KMT2A": {
+      "syndrome": "Wiedemann-Steiner syndrome",
+      "tier1_domains": [],
+      "tier2_domains": [
+        "growth",
+        "feeding",
+        "immune"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK575308/"
+        }
+      ],
+      "traps": [],
+      "organisations": []
+    }
   },
   "cnv_regions": {
     "22q11.2_deletion": {
       "syndrome": "22q11.2 deletion syndrome",
       "band": "22q11.2",
       "copies": 1,
-      "tier1_domains": ["cardiac", "immune/thymic", "calcium/parathyroid", "palate/speech", "hearing", "renal", "skeletal"],
-      "tier2_domains": ["psychiatric conditions in adolescence and adulthood"],
+      "tier1_domains": [
+        "cardiac",
+        "immune/thymic",
+        "calcium/parathyroid",
+        "palate/speech",
+        "hearing",
+        "renal",
+        "skeletal"
+      ],
+      "tier2_domains": [
+        "psychiatric conditions in adolescence and adulthood"
+      ],
       "sources": [
-        {"name": "Health Supervision for Children With 22q11.2 Deletion Syndrome", "journal": "Pediatrics", "year": 2025, "citation": "156(2)", "url": "https://publications.aap.org/pediatrics/article/156/2/e2025072717/202658/Health-Supervision-for-Children-With-22q11-2"},
-        {"name": "Updated clinical practice recommendations for managing adults with 22q11.2 deletion syndrome", "journal": "Genetics in Medicine", "year": 2023, "url": "https://www.gimjournal.org/article/S1098-3600(22)01028-0/fulltext"},
-        {"name": "22q11.2 Society guidelines", "url": "https://22qsociety.org/knowledge/guidelines/"}
+        {
+          "name": "Health Supervision for Children With 22q11.2 Deletion Syndrome",
+          "journal": "Pediatrics",
+          "year": 2025,
+          "citation": "156(2)",
+          "url": "https://publications.aap.org/pediatrics/article/156/2/e2025072717/202658/Health-Supervision-for-Children-With-22q11-2"
+        },
+        {
+          "name": "Updated clinical practice recommendations for managing adults with 22q11.2 deletion syndrome",
+          "journal": "Genetics in Medicine",
+          "year": 2023,
+          "url": "https://www.gimjournal.org/article/S1098-3600(22)01028-0/fulltext"
+        },
+        {
+          "name": "22q11.2 Society guidelines",
+          "url": "https://22qsociety.org/knowledge/guidelines/"
+        }
       ],
       "traps": [
         "Hypocalcaemia can present acutely and is easily missed.",
         "Immune status affects live-vaccine decisions. Both are practical, immediate, and often unknown to families."
       ],
-      "organisations": [{"name": "22q.org", "url": "https://22q.org/"}]
+      "organisations": [
+        {
+          "name": "22q.org",
+          "url": "https://22q.org/"
+        }
+      ]
     },
     "16p11.2_deletion": {
       "syndrome": "16p11.2 deletion",
       "band": "16p11.2",
       "copies": 1,
       "tier1_domains": [],
-      "tier2_domains": ["weight trajectory (obesity risk)", "epilepsy", "spine", "speech/language"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK11167/"}],
-      "traps": ["Deletion and duplication have partly opposite phenotypes — confirm which before writing anything."],
-      "organisations": [{"name": "Simons Searchlight", "url": "https://www.simonssearchlight.org/"}]
+      "tier2_domains": [
+        "weight trajectory (obesity risk)",
+        "epilepsy",
+        "spine",
+        "speech/language"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK11167/"
+        }
+      ],
+      "traps": [
+        "Deletion and duplication have partly opposite phenotypes — confirm which before writing anything."
+      ],
+      "organisations": [
+        {
+          "name": "Simons Searchlight",
+          "url": "https://www.simonssearchlight.org/"
+        }
+      ]
     },
     "16p11.2_duplication": {
       "syndrome": "16p11.2 duplication",
       "band": "16p11.2",
       "copies": 3,
       "tier1_domains": [],
-      "tier2_domains": ["weight trajectory (underweight)", "epilepsy", "psychiatric conditions", "speech/language"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK11167/"}],
-      "traps": ["Deletion and duplication have partly opposite phenotypes — confirm which before writing anything."],
-      "organisations": [{"name": "Simons Searchlight", "url": "https://www.simonssearchlight.org/"}]
+      "tier2_domains": [
+        "weight trajectory (underweight)",
+        "epilepsy",
+        "psychiatric conditions",
+        "speech/language"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK11167/"
+        }
+      ],
+      "traps": [
+        "Deletion and duplication have partly opposite phenotypes — confirm which before writing anything."
+      ],
+      "organisations": [
+        {
+          "name": "Simons Searchlight",
+          "url": "https://www.simonssearchlight.org/"
+        }
+      ]
     },
     "15q11-q13_duplication": {
       "syndrome": "dup15q syndrome",
       "band": "15q11.2",
       "copies": 3,
-      "tier1_domains": ["epilepsy"],
-      "tier2_domains": ["sleep", "feeding", "scoliosis", "SUDEP counselling where indicated"],
-      "sources": [{"name": "Dup15q Alliance", "url": "https://dup15q.org/"}],
-      "traps": ["Epilepsy is often severe. Active therapeutic pipeline — trials worth surfacing."],
-      "organisations": [{"name": "Dup15q Alliance", "url": "https://dup15q.org/"}]
+      "tier1_domains": [
+        "epilepsy"
+      ],
+      "tier2_domains": [
+        "sleep",
+        "feeding",
+        "scoliosis",
+        "SUDEP counselling where indicated"
+      ],
+      "sources": [
+        {
+          "name": "Dup15q Alliance",
+          "url": "https://dup15q.org/"
+        }
+      ],
+      "traps": [
+        "Epilepsy is often severe. Active therapeutic pipeline — trials worth surfacing."
+      ],
+      "organisations": [
+        {
+          "name": "Dup15q Alliance",
+          "url": "https://dup15q.org/"
+        }
+      ]
     },
     "22q13_deletion": {
       "syndrome": "Phelan-McDermid syndrome",
       "band": "22q13",
       "copies": 1,
-      "tier1_domains": ["renal", "cardiac", "hearing", "vision", "epilepsy", "lymphoedema"],
-      "tier2_domains": ["adolescent/adult regression", "catatonia"],
-      "sources": [{"name": "GeneReviews", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1198/"}],
-      "traps": ["See SHANK3 entry — same syndrome."],
-      "organisations": [{"name": "Phelan-McDermid Syndrome Foundation", "url": "https://pmsf.org/"}]
+      "tier1_domains": [
+        "renal",
+        "cardiac",
+        "hearing",
+        "vision",
+        "epilepsy",
+        "lymphoedema"
+      ],
+      "tier2_domains": [
+        "adolescent/adult regression",
+        "catatonia"
+      ],
+      "sources": [
+        {
+          "name": "GeneReviews",
+          "url": "https://www.ncbi.nlm.nih.gov/books/NBK1198/"
+        }
+      ],
+      "traps": [
+        "See SHANK3 entry — same syndrome."
+      ],
+      "organisations": [
+        {
+          "name": "Phelan-McDermid Syndrome Foundation",
+          "url": "https://pmsf.org/"
+        }
+      ]
     }
   }
 }

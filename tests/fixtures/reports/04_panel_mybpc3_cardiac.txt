@@ -1,0 +1,30 @@
+Synthetic test document — fictional patient, generated for software testing. Not a real report.
+
+Harborview Genomic Medicine
+INHERITED CARDIAC CONDITIONS PANEL — REPORT
+
+Patient: Specimen, Testcase W       Date of birth: 30/11/2008
+Record number: 4419277
+Date of collection: 09 March 2026
+Date of report: 27 March 2026
+
+Reason for referral: 17-year-old, asymmetric septal hypertrophy on echocardiogram
+following screening after a father's sudden cardiac death at 41.
+
+Test performed: Inherited cardiac conditions panel (Version 5.0).
+
+RESULT
+
+Gene: MYBPC3
+Transcript: NM_000256.3
+Variant: c.1224-52G>A
+Zygosity: heterozygous
+Inheritance: not determined
+Classification: Variant of uncertain significance
+
+Interpretation: this intronic variant lies outside the canonical splice site. Evidence is
+currently insufficient to classify it as pathogenic or benign. It should not be used to
+guide clinical management or to direct testing of relatives at this time.
+
+Clinical correlation and continued cardiology follow-up are advised irrespective of this
+genetic result.

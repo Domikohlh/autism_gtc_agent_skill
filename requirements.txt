@@ -1,4 +1,0 @@
-# Python 3.10+. Optional: needed only for PDF input — parse_report.py falls
-# back to the `pdftotext` binary (poppler-utils) and errors clearly if neither
-# is present. Everything else is standard library.
-pdfplumber>=0.11.0

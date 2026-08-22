@@ -31,24 +31,103 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 INDEX_PATH = Path(__file__).resolve().parent.parent / "assets" / "gene_index.json"
 
 CYTOBAND = re.compile(r"(?:\d{1,2}|[XY])[pq]\d{1,2}(?:\.\d+)?", re.IGNORECASE)
 
 NOT_FOUND_GUIDANCE = """\
-Not in the curated index. That does not mean there is no guidance — it means
-this index has not curated it. Search, in order:
+Not in the pitfall registry. That is the NORMAL case, not a miss — the registry holds
+genes where the obvious reading is wrong, not every gene that exists.
 
-  1. GeneReviews   https://www.ncbi.nlm.nih.gov/books/NBK1116/
-  2. ClinGen       https://clinicalgenome.org/
-  3. OMIM          https://www.omim.org/
-  4. SFARI Gene    https://gene.sfari.org/
-  5. Recent literature
+Run the retrieval protocol: references/retrieval_protocol.md
 
-Then report honestly how much established guidance exists. "There is no
-published surveillance protocol for this gene" is a valid and useful answer
-that families rarely get."""
+  1. A named guideline or consensus statement for the condition
+  2. GeneReviews          https://www.ncbi.nlm.nih.gov/books/NBK1116/
+  3. ClinGen              https://clinicalgenome.org/     (validity + actionability)
+  4. ClinVar              https://www.ncbi.nlm.nih.gov/clinvar/
+  5. OMIM                 https://www.omim.org/
+  6. The condition's specialist body — cancer, cardiac, metabolic and
+     neurodevelopmental fields each have their own
+  7. The patient organisation, for family-facing material and registries
+
+Extract into the shape given in the protocol, and say which level you are in:
+established / emerging / sparse / nothing found. "There is no published surveillance
+protocol for this gene" is a real answer, and one families almost never get."""
+
+
+VARIANT_GUIDANCE = """\
+! The reporting laboratory's classification GOVERNS. These sources give you its
+  provenance, not a different answer. Never promote a VUS and never downgrade a
+  pathogenic call — report the disagreement and route it to the lab and genetics.
+! Check submitter names against the report letterhead. A single submitter that IS
+  the reporting laboratory is the same opinion counted twice, not corroboration.
+! "Last evaluated" often matters more than the classification itself. An old
+  submission predates the gene-specific criteria now in use.
+! Absence from ClinVar means nothing. Plenty of pathogenic variants were never
+  submitted; that is a fact about submission behaviour, not about the variant.
+! The ClinVar record links out to the OMIM allelic variant and the ClinGen allele
+  ID — follow those from the page instead of searching again. OMIM often blocks
+  automated fetches; if you cannot reach it write "not retrieved" and never fill
+  it from memory. Its allelic variants are curated historical exemplars anyway,
+  not a classification service and not a complete list.
+! A classification is NOT a penetrance figure. "Pathogenic" says the variant
+  causes the condition — not how often, in whom, at what age, or how severely.
+  See references/risk_layer_policy.md before writing any number.
+! Search the variant, never the patient. No name, date of birth, record number or
+  accession from the report goes into a search box. A search box is a third party."""
+
+
+def variant_queries(symbol: str, variant: str) -> dict[str, str]:
+    """
+    Search URLs for variant-level evidence.
+
+    Searches only — never a Variation ID, MIM number or accession. Those are
+    exactly the identifiers this skill must not produce from memory, so the tool
+    that would tempt you to does not exist: open the search and read the
+    identifier off the page you actually loaded.
+    """
+    g = quote(symbol)
+    urls = {}
+    if ":" in variant:  # a full HGVS string, e.g. NM_000314.8:c.388C>T
+        urls["ClinVar, by HGVS"] = (
+            f"https://www.ncbi.nlm.nih.gov/clinvar/?term={quote(variant)}")
+    urls["ClinVar, this variant in this gene"] = (
+        f"https://www.ncbi.nlm.nih.gov/clinvar/?term={g}%5Bgene%5D+AND+{quote(variant)}")
+    urls[f"ClinVar, all variants in {symbol}"] = (
+        f"https://www.ncbi.nlm.nih.gov/clinvar/?term={g}%5Bgene%5D")
+    urls["ClinGen — gene validity, dosage, actionability"] = (
+        f"https://search.clinicalgenome.org/kb/genes?search={g}")
+    urls["ClinGen Evidence Repository — expert-panel variant classifications"] = (
+        "https://erepo.clinicalgenome.org/evrepo/")
+    urls["OMIM — phenotypes and allelic variants"] = (
+        f"https://www.omim.org/search?index=entry&search={g}")
+    return urls
+
+
+def render_variant_evidence(symbol: str, variant: str) -> str:
+    lines = ["### Variant-level evidence — ClinVar / OMIM",
+             f"Query: {symbol} {variant}",
+             "",
+             "Open these and read the identifiers off the page:",
+             ""]
+    for label, url in variant_queries(symbol, variant).items():
+        lines.append(f"  {label}")
+        lines.append(f"    {url}")
+    lines += [
+        "",
+        "Extract:",
+        "  ClinVar   Variation ID · each classification with its submitter count ·",
+        "            review status and star count · last evaluated · conditions",
+        "            asserted · conflict yes/no · submitter names",
+        "  OMIM      gene MIM · phenotypes with MIM, inheritance and mapping key ·",
+        "            allelic variant listed or not",
+        "  Then say: agrees with the report / disputed / not present in these databases",
+        "",
+        VARIANT_GUIDANCE,
+    ]
+    return "\n".join(lines)
 
 
 def load_index() -> dict:
@@ -215,6 +294,11 @@ def main() -> int:
     ap.add_argument("gene", nargs="?", help="Gene symbol, e.g. PTEN")
     ap.add_argument("--cnv", help="Cytoband, e.g. 22q11.2")
     ap.add_argument("--copies", type=int, help="Copy number: 1 = deletion, 3 = duplication")
+    ap.add_argument("--variant", metavar="HGVS",
+                    help="A specific variant (c./p. change, or full NM_...:c.... string). "
+                         "Adds the ClinVar / ClinGen / OMIM query set for variant-level "
+                         "evidence — provenance for the lab's classification, never a "
+                         "replacement for it")
     ap.add_argument("--json", action="store_true", help="Emit raw JSON")
     ap.add_argument("--list", action="store_true", help="List everything curated")
     args = ap.parse_args()
@@ -233,6 +317,10 @@ def main() -> int:
         return 0
 
     if args.cnv:
+        if args.variant:
+            print("note: --variant needs a gene symbol; a cytoband has no variant-level "
+                  "ClinVar or OMIM entry to look up. Run the gene separately.\n",
+                  file=sys.stderr)
         hits = match_cnv(index, args.cnv, args.copies)
         if not hits:
             print(f"No curated region matching {args.cnv}"
@@ -255,9 +343,14 @@ def main() -> int:
     if found:
         key, entry = found
         if args.json:
-            print(json.dumps({key: entry}, indent=2))
+            payload = {key: entry}
+            if args.variant:
+                payload["_variant_evidence"] = variant_queries(key, args.variant)
+            print(json.dumps(payload, indent=2))
         else:
             print(render(key, entry, resolved_from=args.gene.upper()))
+            if args.variant:
+                print(render_variant_evidence(key, args.variant))
         return 0
 
     # Not a curated gene symbol. Before giving up, try the two other things the
@@ -283,8 +376,13 @@ def main() -> int:
             print()
         return 0
 
-    print(f"{args.gene.upper()}: not in the curated index.\n")
+    print(f"{args.gene.upper()}: no curated trap recorded.\n")
     print(NOT_FOUND_GUIDANCE)
+    if args.variant:
+        # The registry miss is the normal case, so the variant-level path has to
+        # work here too — this is where most real variants will land.
+        print()
+        print(render_variant_evidence(args.gene.upper(), args.variant))
     return 0
 
 

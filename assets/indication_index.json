@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "Structured companion to references/testing_indications.md. Routes a clinical picture to the authority that makes genetic testing indicated, and routes a test already done to what it could not have found. Deliberately contains NO eligibility wording, NO age thresholds, and NO diagnostic yield figures — those drift between directory versions and must be retrieved from the cited authority with a retrieval date.",
+    "description": "Two different things. `test_gaps` is DISEASE-AGNOSTIC and universally true — what an assay can and cannot detect is a property of the assay, whatever you are looking for. `indications` and `authorities` are curated examples, weighted to neurodevelopmental presentations; for anything else run references/retrieval_protocol.md to establish the governing authority. Holds NO eligibility wording, age thresholds or yield figures — those drift between directory versions and must be retrieved with a date.",
     "curated": "2026-08-17",
     "how_to_read": {
       "url": "Present when the exact location is known and stable. Fetch it.",
@@ -8,7 +8,9 @@
       "establishes": "What the authority is being cited FOR. Never cite it for more than this.",
       "trigger_groups": "Every group must have at least one hit for the indication to match. Two groups means two independent features must both be present — 'autism' alone must not match the with-developmental-delay indication.",
       "absent_triggers": "If any of these appear, the indication does NOT match. Absence of a phrase is not evidence that the feature is absent, so an indication matched this way is reported with that caveat rather than asserted.",
-      "reanalysable": "Whether the assay left data that can be re-examined. False means reanalysis is the wrong request and new testing is the right one — a distinction that decides whether an ask succeeds."
+      "reanalysable": "Whether the assay left data that can be re-examined. False means reanalysis is the wrong request and new testing is the right one — a distinction that decides whether an ask succeeds.",
+      "test_gaps": "Universal. A microarray cannot see sequence variants whether you are looking for an autism gene or a cancer predisposition gene. Use these directly for any condition.",
+      "indications": "Examples, not coverage. A picture that does not match is not a picture without an indication — retrieve the governing document instead."
     }
   },
   "authorities": {

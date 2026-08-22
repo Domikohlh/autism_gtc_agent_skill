@@ -87,6 +87,47 @@ done so.
   whether Tier 1 surveillance content exists. Do not bury a PTEN finding under three VUS.
 - **De-identify before writing to any file.** Strip names, DOB, MRN, ordering clinician.
 
+## When the report is a PDF, a scan or a photograph
+
+**You read it; the parser does not.** There is no PDF extractor in this repository, on
+purpose. A bundled one adds a dependency and a crash surface, and it fails silently in the
+worst way: an image-only PDF yields empty text, which looks exactly like a negative report.
+You can see the document already, so read it and pass the text on.
+
+Transcribe these fields, exactly as written. Do not normalise, correct or expand anything
+— if the report says `c.697C>T` you write `c.697C>T`:
+
+```
+Test type            [microarray / panel / exome / genome / karyotype / repeat assay]
+Report date          [as labelled — "Date of report", not the date of birth]
+Gene                 [symbol as printed]
+Transcript           [NM_… with version]
+Variant              [c. and p. exactly as printed]
+Zygosity             [heterozygous / homozygous / hemizygous / mosaic]
+Inheritance          [de novo / maternal / paternal / not determined]
+Classification       [the laboratory's word, verbatim]
+CNV                  [ISCN string if present, else the prose sentence]
+Repeat result        [motif, sizes, methylation status]
+Secondary findings   [present / none reported / not analysed]
+Limitations          [the paragraph verbatim — it carries the assay's blind spots]
+```
+
+Then hand it to the parser for structuring and redaction:
+
+```bash
+python scripts/parse_report.py --text "…the transcribed fields…"
+```
+
+**Verify the variant string character by character** before you pass it on. `c.1234G>A`
+and `c.1234C>A` are different variants, and a transcription slip becomes a wrong brief
+with no warning attached. If any character is unclear — a scan artefact, a fold, a low
+resolution photograph — say so and ask, rather than guessing.
+
+**If the document is an image you genuinely cannot read**, say that plainly and ask for a
+text version or a clearer capture. Do not infer content from a filename or a partial view.
+
+---
+
 ## File formats, and what a conversion costs
 
 **`.vcf` is preferred. `.txt` is the fallback when a platform refuses it.** Some platforms

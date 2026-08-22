@@ -1,10 +1,54 @@
-# Autism Gene-to-Care Navigator
+# Gene-to-Care Navigator
 
-An agent skill that turns a genetic test report for autism or another neurodevelopmental
-condition into two things a person can actually use: a plain-language explanation, and
+An agent skill that turns a genetic test report — for any inherited or genomic condition —
+into two things a person can actually use: a plain-language explanation, and
 the **published, actionable care implications** of what was found.
 
 ---
+
+## Quick start
+
+**1 · Get the skill.** Clone or download this repository, then build the upload package:
+
+```bash
+python scripts/bundle_skill.py
+```
+
+That writes two things into `dist/` — a folder and a `.zip` of it. 
+**Upload one of those, not the repository**, which carries a test corpus, diagrams and git history the skill does
+not need (300 KB against 5 MB). If a folder upload fails, upload the `.zip`; see
+[Packaging for upload](#packaging-for-upload). Nothing to install: there are no
+dependencies.
+
+**2 · Just ask, in your own words.** Don't name the skill; it recognises what you're asking
+about.
+
+> *"We got our son's genetic results back and I don't understand any of it."*
+> *"The microarray was normal. Does that rule out a genetic cause?"*
+> *"Can you put this report into words I can give the parents?"*
+
+**3 · Give it the report.** Attach the file or paste the text — a PDF, a photo of a letter,
+or a few lines you typed out all work. The agent reads it directly.
+
+**4 · You get two versions**: a plain-language one for the family, and a technical one for
+clinicians. Ask for just one if that's all you need. You can also ask for an interactive
+page instead of a written report.
+
+Published risk percentages appear in the **clinician** version only, marked reference-only.
+They are figures measured in study cohorts, not a forecast for one person, and reading them
+against the cohort they came from is a clinician's job.
+
+### Want to try it before using a real report?
+
+`tests/fixtures/` holds invented reports and situations — no real patients — and
+`tests/prompts.md` gives you something to paste alongside each one. Start with a report
+from `tests/fixtures/reports/` and the question *"we got this back, can you tell me what
+it means?"*
+
+> **Before you use a real report**, read
+> [Data privacy and confidentiality](#data-privacy-and-confidentiality). The skill removes
+> names and record numbers, but the content still reaches whichever AI service you're
+> using — that's a decision only you can make.
 
 ## Why this exists
 
@@ -19,7 +63,20 @@ gain-of-function showed **94%** good-to-excellent phenytoin response, loss-of-fu
 **0%** ([*Brain*, 2024](https://academic.oup.com/brain/article/147/8/2761/7656659)).
 Families are told about the developmental gene and hear nothing about either.
 
+This skill aims to help patients, their family, and healthcare professionals to understand, validate, and further research of a genetic conditions. Currently, it 
+no longer limits to neurodevelopmental disorder, but **any** genetic report for analysis.
+
 **This tool is addressing the delivery of information, not the methodology.**
+
+### Scope
+
+**Any inherited or genomic condition** — neurodevelopmental, cancer predisposition,
+chromosomal syndromes such as Down syndrome, cardiac, metabolic, rare disease. Curation
+started with neurodevelopmental conditions and the worked examples still skew that way,
+but the *method* is disease-general: `references/retrieval_protocol.md` gives the search
+order, the shape to extract into, and how to calibrate what you found. The curated indexes
+are a **pitfall registry, not a coverage claim** — a gene's absence from them says nothing
+about that gene.
 
 ### What it is not
 
@@ -39,10 +96,10 @@ Surveillance ages, intervals, modalities and risk percentages drift between guid
 versions. A thyroid ultrasound starting at age 7 versus age 10 is the difference between
 useful and harmful — and a family *will* act on a number the tool gives them.
 
-So the curated index records **that** a protocol exists, **which** document holds it, and
-**which domains** it covers, and deliberately contains no ages, intervals or doses. The
-agent fetches the source and quotes it with a retrieval date. If it cannot reach the
-source, it names the document and stops.
+Everything downstream follows from this. The indexes record **that** a protocol exists and
+**which** document holds it, never the specifics; the agent fetches the source and quotes
+it with a retrieval date; and if it cannot reach the source it names the document and
+stops rather than filling the gap.
 
 ---
 
@@ -59,12 +116,13 @@ move and shape data — they never make a clinical call.
 |---|---|---|---|
 | 1 · Ingest | `parse_report.py` | `report_parsing.md` | Findings JSON |
 | 2 · Lookup | `gene_lookup.py` + `gene_index.json` | `gene_index.md` | Sources to fetch, tier-split domains, traps |
-| 2b · Fetch | *(agent, via web)* | — | Current specifics + retrieval date |
+| 2a · Fetch | *(agent, via web)* | `retrieval_protocol.md` | Current specifics + retrieval date |
+| 2b · Variant evidence | `gene_lookup.py --variant` | `retrieval_protocol.md` §2b | ClinVar / ClinGen / OMIM provenance for the lab's classification |
 | 3 · Risk layer | *(agent)* | `risk_layer_policy.md` | Tier assignment |
 | 4 · VUS | *(agent)* | `vus_communication.md` | Uncertainty framing |
 | 5 · Staleness | *(agent)* | `SKILL.md` | Reanalysis prompt |
 | 6 · Testing gap | `indication_lookup.py` + `indication_index.json` | `testing_indications.md` | Prior-assay blind spots, what is indicated, whose authority |
-| 7 · Render | `render_brief.py` | `output_templates.md` | `brief.md`, both registers |
+| 7 · Render | `render_brief.py` | `output_templates.md` | Both registers, as markdown or a self-contained page |
 
 ---
 
@@ -82,7 +140,7 @@ The most valuable and highest-risk part of the skill. One question governs it:
 | **Action** | Include prominently | Include, framed as awareness | **Exclude entirely** |
 | **Examples** | PTEN thyroid/renal · TSC renal/SEGA · NF1 optic glioma · 22q11.2 cardiac/immune/calcium | Phelan-McDermid regression/catatonia · 22q11.2 psychiatric risk | Polygenic scores · risk inferred from a VUS · trajectory predictions |
 | **Framing** | "Standard care, not prediction" | "More common, not inevitable, treatable" | — |
-| **Percentages** | Only if retrieved this session | Only if retrieved this session | Never |
+| **Percentages** | Only if retrieved this session, with the cohort named | Only if retrieved this session, with the cohort named | Never |
 
 Two gates sit in front of the tiering:
 
@@ -94,6 +152,10 @@ Two gates sit in front of the tiering:
 A VUS bypasses the risk layer entirely — it carries no risk information, must not drive
 surveillance, and must not drive cascade testing.
 
+**Published percentages are a clinician-register artefact.** They are read against the
+cohort they were measured in, which is a professional's job; the same figure handed to a
+family reads as a forecast. See [`render_brief.py`](#render_briefpy).
+
 ---
 
 ## Repository layout
@@ -102,18 +164,20 @@ surveillance, and must not drive cascade testing.
 gene-to-care-navigator/
 ├── SKILL.md                    # trigger description, workflow, guardrails, tone
 ├── LICENSE·LICENSE-DOCS·NOTICE # Apache 2.0 for code, CC BY 4.0 for content
-├── assets/gene_index.json      # 27 genes + 5 CNV regions — routing only, no specifics
-├── assets/indication_index.json # indications, authorities, prior-test blind spots
-├── references/                 # the judgement layer, as prose the agent reads:
+├── assets/gene_index.json      # pitfall registry — traps, not coverage; no ages or doses
+├── assets/indication_index.json # assay blind spots (universal) + example indications
+├── references/                 # the judgement layer, as prose the agent reads
+│                               #   (incl. data_privacy.md — read before a real report)
 |
 ├── scripts/
+│   ├── bundle_skill.py         # build + verify the upload folder (dev tool, not shipped)
 │   ├── phi.py                  # identifier ruleset, shared by the scripts below
 │   ├── parse_report.py         # report → findings JSON, identifiers redacted
 │   ├── gene_lookup.py          # gene / syndrome / cytoband → sources, domains, traps
 │   ├── indication_lookup.py    # features + prior tests → gaps, indications, authorities
 │   └── render_brief.py         # findings → two-register brief
 ├── tests/                      # smoke_test.py · cases.md (rubric) · prompts.md
-│   └── fixtures/               #   39 synthetic reports, VCFs, scenarios, .txt conversions
+│   └── fixtures/               #   29 synthetic: 7 reports · 5 scenarios · 6 adversarial · 11 VCF
 └── docs/                       # workflow + risk-layer diagrams (.png, .mmd)
 ```
 
@@ -121,13 +185,13 @@ gene-to-care-navigator/
 
 ## Requirements
 
-**Python 3.10+, standard library only.** PDF input optionally uses `pdfplumber`
-(`pip install -r requirements.txt`) and otherwise falls back to the `pdftotext` binary
-from poppler-utils.
+**No dependencies, no install step — the scripts use the standard library only.**
 
-There is deliberately no HTTP client, LLM SDK, or bioinformatics stack — the agent does
-retrieval through its own tooling. Code that touches health information is easier to audit
-when there is little to audit.
+No HTTP client, no LLM SDK, no bioinformatics stack, no PDF extractor. The agent reads
+documents and does retrieval through its own tooling; nothing here computes a clinical
+answer. **A repository that cannot run a predictor cannot accidentally present one as a
+finding** — and code that touches health information is easier to audit when there is
+little to audit.
 
 ---
 
@@ -138,11 +202,16 @@ explains. Run any script with `--help` for full usage.
 
 ### `parse_report.py`
 
-Extracts structured findings from a report — PDF, plain text, or VCF — covering sequence
+Extracts structured findings from a report — plain text or VCF — covering sequence
 variants, copy-number findings, and repeat expansions.
 
+**There is no PDF reader, on purpose.** When a report is a PDF or a photograph the agent
+reads it and passes the text in with `--text`; the extraction format is in
+`references/report_parsing.md`. A bundled extractor adds a dependency and a crash surface,
+and fails silently in the worst way — an image-only PDF yields empty text, which looks
+exactly like a negative report.
+
 ```bash
-python scripts/parse_report.py report.pdf
 python scripts/parse_report.py report.txt --json findings_raw.json
 python scripts/parse_report.py annotated.vcf.txt --sample proband
 python scripts/parse_report.py --text "NM_001040142.2(SCN2A):c.5645G>A (p.Arg1882Gln), heterozygous, pathogenic"
@@ -174,6 +243,8 @@ the source did not say:
   almost always the date of birth, and taking it inverts the staleness judgement.
 - Prose CNVs ("a 2.6 Mb deletion at 22q11.21") are read as well as ISCN, but `copies`
   stays null and a region named only for contrast is not counted as a finding.
+- Karyotypes are captured as the ISCN string verbatim and never interpreted — one
+  character separates a trisomy from a translocation.
 - Repeat expansions are extracted separately, with sizes reported and never interpreted.
   A limitations paragraph mentioning them does not become a result.
 - **A VCF is not a report.** It carries no interpretation, and says so in `warnings`.
@@ -195,8 +266,18 @@ python scripts/gene_lookup.py "Cowden syndrome"       # alias → PTEN
 python scripts/gene_lookup.py Rett                    # syndrome name → MECP2
 python scripts/gene_lookup.py 22q11.2                 # cytoband → CNV region
 python scripts/gene_lookup.py --cnv 22q11.2 --copies 1
+python scripts/gene_lookup.py PTEN --variant "NM_000314.8:c.388C>T"
 python scripts/gene_lookup.py --list
 ```
+
+`--variant` adds the variant-level evidence step: it builds the ClinVar, ClinGen and OMIM
+search URLs for that variant, states what to extract from each, and prints the traps. It
+constructs **searches only** — never a Variation ID, MIM number or accession, because those
+are exactly the identifiers that must not come from memory. One rule governs the step:
+**the reporting laboratory's classification is the one that governs.** These sources give
+its provenance — how many independent submitters, what review status, when last evaluated,
+whether they conflict — not a different answer. A disagreement is reported and routed, not
+settled here.
 
 Returns syndrome, Tier 1 and Tier 2 domains, **sources to fetch**, traps, and patient
 organisations. For an uncurated gene it returns a search order rather than nothing —
@@ -204,6 +285,66 @@ organisations. For an uncurated gene it returns a search order rather than nothi
 rarely get. Lookups accept whichever word the person was given, since a family arrives
 with "Rett" at least as often as with MECP2. CNV entries print band and copy number in
 full, because deletion and duplication of one band can have partly opposite phenotypes.
+
+### `bundle_skill.py`
+
+Builds the upload package and then checks it, rather than trusting the copy.
+
+```bash
+python scripts/bundle_skill.py            # folder + .zip in dist/
+python scripts/bundle_skill.py --list     # what would be copied, then stop
+python scripts/bundle_skill.py --flat     # SKILL.md at the archive root
+python scripts/bundle_skill.py --no-zip   # folder only
+python scripts/bundle_skill.py --out ~/Desktop
+```
+
+It copies `SKILL.md`, `references/`, `scripts/`, `assets/` and the licence files, and
+leaves out the test corpus, diagrams, README, git history and Python caches.
+
+`README.md` is deliberately not bundled. It documents the repository — tests, fixtures,
+roadmap, licence rationale — none of which exists in a bundle, so shipping it would put
+dangling references in front of the agent. The privacy content the skill itself relies on
+lives in `references/data_privacy.md`.
+
+#### Packaging for upload
+
+A skill upload needs **`SKILL.md` at the upload root, or at the top of a single enclosing
+folder**, and must be **under 30 MB uncompressed**. This bundle is ~314 KB, so only the
+layout is ever in question. Work down this ladder:
+
+| If | Then |
+|---|---|
+| Folder upload works | Upload `dist/gene-to-care-navigator/`. Done |
+| Folder upload is rejected or silently fails | Upload `dist/gene-to-care-navigator.zip`. It contains one top-level folder with `SKILL.md` at its top — the layout the docs show |
+| The zip is also rejected | Rebuild with `--flat` and upload that. Some uploaders want `SKILL.md` at the archive root with no enclosing folder |
+
+**Do not zip it with Finder's "Compress".** macOS adds a `__MACOSX/` tree and `.DS_Store`
+entries that some uploaders reject and none of them need. `bundle_skill.py` writes the
+archive with Python's `zipfile`, which adds neither, and fails the build if either appears.
+
+The archive is **byte-identical across runs** — entries sorted, timestamps fixed — so two
+builds of the same tree produce the same file, and a changed checksum means the content
+actually changed. Scripts with a shebang keep their executable bit; nothing else gets one.
+
+#### What it verifies
+
+Checks run against the built folder and the archive. A failure prints its reason and exits
+non-zero; both are still written so you can look at them.
+
+| Check | Catches |
+|---|---|
+| Frontmatter **parses as YAML** | A colon-space in the description, a `#`, a leading indicator character — each makes the skill unimportable |
+| `name` and `description` within limits | 64 and 1024 characters; over by one is a rejected upload |
+| Every path the bundled prose points at exists | A reference file left out, which produces a skill that reads normally and has silently lost a layer of judgement |
+| Every script runs from its new location | An asset that did not travel, so a lookup fails at use time rather than build time |
+| Archive shape and contents | `SKILL.md` missing from the expected path, `__MACOSX`/`.DS_Store` junk, more than one top-level entry, or contents over the 30 MB limit |
+
+The YAML check is not decoration. The `description` is an unquoted scalar, so a colon
+followed by a space inside it (`care implications: surveillance…`) parses as a nested
+mapping and the import fails with an error naming a column rather than a cause. Length
+checks alone let exactly that ship once. `scripts/bundle_skill.py` holds the single
+implementation and `tests/smoke_test.py` calls it, so the repository and a built bundle are
+judged by the same rules.
 
 ### `indication_lookup.py`
 
@@ -228,17 +369,69 @@ output says so, because absence of a phrase is not absence of the feature.
 
 ### `render_brief.py`
 
-Assembles the two-register document from a structured findings JSON.
+Assembles the two registers from a structured findings JSON — markdown, or a
+self-contained HTML page with no scripts and no external assets, so it opens offline,
+prints, and survives being emailed.
 
 ```bash
 python scripts/render_brief.py findings.json --out brief.md
-python scripts/render_brief.py findings.json --family-only
+python scripts/render_brief.py findings.json --html brief.html --audience family
+python scripts/render_brief.py findings.json --html clin.html --audience clinician
 ```
 
 Empty sections omit themselves. The PHI check **refuses to write the file** if it finds an
 identifier — writing is the step that makes a leak durable, so that is the step that stops
 — with `--allow-phi` to override deliberately. It uses `scripts/phi.py`, the same ruleset
 the parser redacts with, so the two cannot drift apart.
+
+#### Published figures, and why there is no score
+
+`risk_figures` reproduces penetrance figures that appear *in a source* — a bibliography
+drawn to scale. Nothing is computed. **A figure describes a cohort; a score would describe
+a person**, and that is a prediction rather than a citation.
+
+Gates in front of every figure, all enforced in code:
+
+| Gate | Effect |
+|---|---|
+| Reporting lab's classification | Pathogenic / likely pathogenic draw. VUS, benign, conflicting, or none recorded refuses the block and prints why |
+| `condition`, `percent`, `cohort`, `source`, `retrieved` (YYYY-MM-DD) | All five, or the entry is not drawn and is listed with the reason |
+| Percent outside 0–100 | Refused, not clamped — a typed 350 used to become a full-width bar with no warning |
+| Audience | **Clinician register only.** No figure, caption or stylesheet reaches a family-facing output in any format |
+
+The **cohort** field is mandatory because most published penetrance comes from families
+ascertained *because someone was already affected*, which runs far higher than the figure
+for a variant found incidentally. A bar without that line says something untrue.
+
+The clinician surfaces carry a **reference-only** block: not a diagnosis, not a risk
+assessment for this patient, not a basis for a clinical decision on its own, and a
+direction to the genetics team or an appropriately qualified clinician. Polygenic scores
+are excluded entirely (Tier 3).
+
+#### The interactive panel
+
+Pass `risk_panel` instead of the flat list and the clinician page gains profile tabs and a
+cohort-basis toggle — radio inputs and CSS, still **no scripts**.
+
+It looks like a variant browser, with two deliberate substitutions:
+
+| A variant browser puts here | This puts |
+|---|---|
+| A calculated risk score | **Evidence provenance** — ClinVar review status, stars, submitter count, last evaluated. Retrieved, never derived |
+| A penetrance or allele-frequency dial | **A cohort-basis toggle** — switches between the clinic-ascertained and population-based *published* figures for one condition |
+
+The tabs change which finding you are reading; the toggle changes which citation you are
+reading. A control that changes what a number *works out to* is a risk calculator on an
+individual, whatever it is labelled, and there isn't one.
+
+Putting the two cohorts one click apart is also the most useful thing the panel does: for
+many genes the clinic-based and population-based penetrance differ enormously, and that
+gap is the single largest caveat on any figure shown.
+
+`surveillance_tier` accepts **1, 2 or 3 only** — the evidence tiers from the risk layer.
+An actionability rating such as "Tier III (Low Risk)" is refused and dropped: whether a
+finding is low risk is a clinical judgement this tool does not make. Each finding is gated
+separately, and a refused finding **keeps its tab**, stating why it is empty.
 
 ---
 
@@ -262,6 +455,11 @@ the parser redacts with, so the two cannot drift apart.
 10. **Never invent a clinical feature to strengthen a request.** Only what the user
     reported goes into a drafted referral or funding request, and any draft is for a human
     to check and send.
+11. **No risk scores.** A penetrance figure describes a cohort; a score describes a
+    person. Figures are reproduced from a source with the cohort they were measured in,
+    never computed, combined, averaged or personalised — and never attached to a VUS.
+12. **Never re-classify a variant.** The reporting laboratory's classification governs.
+    ClinVar and OMIM establish its provenance, not a replacement for it.
 
 Showing the reasoning for every assertion is also what keeps this inside the 21st Century
 Cures Act §3060 clinical-decision-support carve-out rather than in medical-device
@@ -275,6 +473,10 @@ A genetic test report is among the most sensitive documents a person will ever h
 concerns a named individual, it is frequently about a child, and it carries information
 about relatives who never consented to anything. **The redaction in these scripts is a
 safety net, not permission.**
+
+This section is for whoever deploys the tool. The agent-facing version — what to do about
+identifiers while producing a brief — is `references/data_privacy.md`, which ships with the
+skill.
 
 ### What the code does
 
@@ -340,8 +542,7 @@ exists — not to look comprehensive.
 
 For the testing-gap step, `assets/indication_index.json` carries 6 clinical indications,
 7 prior-test blind-spot entries, and 4 governing authorities (ACMG 2021, the NHS National
-Genomic Test Directory, ACMG SF v3.3, ACMG fragile X). Like the gene index it holds no
-eligibility criteria, age thresholds or yield figures — only which document governs.
+Genomic Test Directory, ACMG SF v3.3, ACMG fragile X).
 
 **Adding a gene:** add an entry to `assets/gene_index.json` (`syndrome`, `tier1_domains`,
 `tier2_domains`, `sources`, `traps`, `organisations`; aliases use
@@ -360,13 +561,23 @@ python scripts/gene_lookup.py --list          # index integrity
 
 Testing splits into two layers, and only one can be automated.
 
-**Parser layer** — `smoke_test.py` runs 39 synthetic fixtures through `parse_report.py`
+**Parser layer** — `smoke_test.py` runs the 29-fixture corpus through `parse_report.py`
 and asserts what came out. Expectations were recorded from verified runs rather than
 written from intent, so a failure means behaviour changed — read the diff before editing
 the expectation. It also cross-checks every planted identifier against *every* fixture's
-output, and refuses to pass unless each fixture carries a synthetic marker. The corpus
-spans the layouts, the clinical scenarios, the VCF variants, and the cases that must
-produce **nothing**; [`tests/cases.md`](tests/cases.md) lists what each one tests.
+output, and refuses to pass unless each fixture carries a synthetic marker.
+
+**The corpus is small on purpose.** Seven reports and five scenarios, one per condition
+category or case type — neurodevelopmental, chromosomal microdeletion, aneuploidy,
+cardiac, metabolic, repeat expansion, and the negative result — plus the VCF and
+conversion fixtures and six adversarial documents. Each earns its place by exercising
+something no other fixture does; [`tests/cases.md`](tests/cases.md) records what.
+
+**Figure and panel gates** — the same run asserts the refusals directly: a VUS, benign,
+conflicting or missing classification refuses the block; a figure without a cohort, source
+or `YYYY-MM-DD` date is not drawn; a percent outside 0–100 is refused rather than clamped;
+figures never reach a family-facing page; an actionability rating in the tier slot is
+dropped; and the panel emits no `<script>`.
 
 **Skill layer** — [`tests/cases.md`](tests/cases.md) carries the rubric, scored by hand
 because the failures that matter are judgement failures.
@@ -430,7 +641,17 @@ step** — see [Data privacy](#data-privacy-and-confidentiality) first.
   bring to a clinician or payer. Delivered as sections of the clinician register rather
   than as a separate skill. Targets the 11.3% directly.
 - **v3** — (i) Reanalysis advocate — case-level facts only (date, assay, coverage, singleton vs trio), with the assay-level judgement of whether there's anything to reanalyse at all. Names no newly described genes.(ii)Plain-language translation — technical document to family-readable, meaning preserved. Classifications never promoted, caveats rephrased never dropped, shared glossary with the register check.
-- **v4** *(current)* — Wrap up, Cost optimisation, latency reduction, Overlap review, README.md final update. 
+- **v4** — Wrap-up: cost optimisation, latency reduction, overlap review. Broadened beyond
+  neurodevelopmental conditions — the indexes became a *pitfall registry* and
+  `retrieval_protocol.md` became the primary path, so an uncurated gene is the normal case
+  rather than a miss. PDF extractor removed.
+- **v5** *(current)* — Evidence and figures. (i) **Variant-level provenance**: a defined
+  ClinVar / ClinGen / OMIM step answering *how well supported is this classification*,
+  never *what should it be* — the reporting laboratory's call governs. (ii) **Penetrance,
+  not a score**: published cohort figures with mandatory ascertainment, gated on the lab's
+  classification, refused rather than clamped or guessed, and confined to the clinician
+  register. (iii) An **interactive panel** whose controls switch between citations instead
+  of computing a number. (iv) Fixture corpus cut to one case per condition category.
 
 ---
 

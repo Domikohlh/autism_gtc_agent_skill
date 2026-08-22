@@ -1,6 +1,6 @@
 ---
 name: gene-to-care-navigator
-description: Translates a genetic test report for autism or another neurodevelopmental condition into plain-language explanation plus the published, actionable care implications of the gene found — surveillance protocols, medication considerations, patient organisations, and registries. Use whenever someone shares or describes a genetics report, microarray, exome, genome, or gene panel result, or names a specific gene or chromosomal finding (PTEN, SCN2A, MECP2, TSC1/2, SHANK3, SYNGAP1, 16p11.2, 22q11.2, FMR1 and similar) in a neurodevelopmental context; asks what a variant or result means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a genetic finding carries risk of cancer, epilepsy, heart problems or other future conditions. Also use when a clinician, clinical scientist or genetic counsellor asks for a technical document, report paragraph or letter to be put into plain language for a patient and family. Also use for negative or non-diagnostic reports, where the answer is what to do next — including what the testing already done could not have found, what further testing is guideline-indicated, and the wording to take to a clinician, a genetics service or a payer. Trigger even without the word "genetics" — a pasted variant string or a gene symbol with a clinical question both count.
+description: Translates any genetic test report into plain language plus the published care implications, covering surveillance protocols, medication considerations, patient organisations and registries. Use when someone shares or describes a genetics report, microarray, exome, genome, karyotype or gene panel result, or names a gene or chromosomal finding (PTEN, BRCA1/2, trisomy 21, 22q11.2, FMR1) with a clinical question; asks what a variant means, what to monitor, what to do now, or what to ask the doctor; needs a variant of uncertain significance explained; or asks whether a finding carries risk of cancer, epilepsy or heart conditions. Also use when a clinician or counsellor wants a report put into plain language for a family, and for negative or non-diagnostic results, where the answer is what the testing missed, what further testing is indicated, and the wording to take to a clinician or payer. A pasted variant string or gene symbol with a clinical question counts, even without the word genetics.
 ---
 
 # Gene-to-Care Navigator
@@ -14,11 +14,12 @@ the direction of the variant's effect changes which seizure medication works, or
 there is a patient organisation and a registry, or which questions to bring to the next
 appointment.
 
-That gap is the problem this skill exists to close. Around 11% of people evaluated for
-autism or neurodevelopmental disorders receive guideline-concordant genetic testing at
-all (Arcebido et al., *Autism*, 2025), and among those who do, the published care
-implications of the result routinely never reach them. The information exists. It is
-just not delivered.
+That gap is the problem this skill exists to close, and it is not specific to one
+condition. It is the same gap for a BRCA1 carrier, a child with trisomy 21, a family with
+a cardiomyopathy variant: the information exists, it is published, and it does not reach
+them. Around 11% of people evaluated for autism or neurodevelopmental disorders receive
+guideline-concordant genetic testing at all (Arcebido et al., *Autism*, 2025) — the
+curated examples here started there, but **the method is disease-general**.
 
 You are closing the last mile between a genomic result and a person's actual care.
 
@@ -56,9 +57,9 @@ percentages **drift between guideline versions and you will get them subtly wron
 thyroid ultrasound starting at age 7 versus age 10 is the difference between useful and
 harmful.
 
-So: `references/gene_index.md` tells you *that* a protocol exists, *which* authoritative
-document holds it, and *which domains* it covers. It deliberately does not contain the
-specifics. **Fetch the source and quote it with a retrieval date.** If you cannot reach
+So the retrieval protocol tells you *where* the answer lives and *what shape* to extract
+it in, and the pitfall registry tells you *which* readings are traps. Neither contains the
+specifics, deliberately. **Fetch the source and quote it with a retrieval date.** If you cannot reach
 the source, say the protocol exists, name the document, and tell the user to obtain the
 specifics from it or from their genetics team — do not fill the gap from memory.
 
@@ -67,8 +68,15 @@ specifics from it or from their genetics team — do not fill the gap from memor
 ### Step 1 — Read the report and normalise what's in it
 
 If a file was provided, use `scripts/parse_report.py` to pull out the structured content.
-It reads PDF, text and VCF, and emits JSON. If the user pasted or described the result,
-run it with `--text` or extract the same fields by reading.
+It reads text and VCF and emits JSON.
+
+**If the report is a PDF, a scan or a photograph, you read it — there is no PDF extractor
+here.** You can already see the document; a bundled reader would add a dependency and a
+crash surface, and would fail silently on an image-only PDF by returning empty text that
+looks like a negative report. Transcribe the fields exactly as printed — the format is in
+`references/report_parsing.md` — then pass them to `--text` for structuring and redaction.
+Verify the variant string character by character: `c.1234G>A` and `c.1234C>A` are different
+variants, and a transcription slip becomes a wrong brief with no warning attached.
 
 **If a platform refuses the file type, tell them to rename it to `.txt`.** Format is
 detected from content, never from the extension, so `results.vcf` renamed to
@@ -89,6 +97,9 @@ What you need:
 - **Classification**: pathogenic / likely pathogenic / VUS / likely benign / benign
 - **Zygosity** and **inheritance** (de novo, maternal, paternal, unknown)
 - **CNVs / chromosomal findings** with coordinates and size
+- **Karyotype**, if present — reported in `karyotypes` as the ISCN string verbatim and
+  never interpreted. `47,XY,+21` and `46,XY,t(14;21)` differ by a few characters and
+  mean very different things; read the notation against the source
 - **Repeat expansions** — reported separately in `repeats`; sizes are reported, never
   interpreted, because thresholds are gene- and assay-specific
 - **Test type** (microarray, panel, exome, genome) and **report date** — the date
@@ -107,7 +118,7 @@ Check each flagged field against the source rather than passing it through.
 
 Identifiers are redacted from the parser's output by default. That is a backstop, not a
 licence: do not echo names, dates of birth or record numbers into anything you write, and
-see the privacy section of `README.md` before working with a real patient's report.
+see `references/data_privacy.md` before working with a real patient's report.
 
 If something critical is genuinely ambiguous — most often which gene, or whether a
 result is pathogenic versus VUS — ask rather than guess. One clarifying question is
@@ -115,10 +126,15 @@ cheaper than a confidently wrong brief.
 
 ### Step 2 — Look up what is established for this gene
 
-Run `scripts/gene_lookup.py`, and read `references/gene_index.md` for the prose behind an
-entry. For curated genes you get: the associated syndrome, the authoritative sources,
-which care domains have published guidance, and any gene-specific traps (e.g. SCN2A's
-direction-of-effect problem).
+**`references/retrieval_protocol.md` is the primary path, for any gene and any
+condition.** It gives the search order, the shape to extract into, and how to calibrate
+what you found — established, emerging, sparse, or nothing. Read it before writing.
+
+The curated indexes are a **pitfall registry, not a coverage claim.** Run
+`scripts/gene_lookup.py` to check whether a trap is recorded — SCN2A's direction-of-effect
+problem, 16p11.2 deletion versus duplication, FMR1 needing a separate assay. A gene absent
+from it has no trap *recorded here*, which is not the same as having none, and is not a
+reason to stop.
 
 ```bash
 python scripts/gene_lookup.py PTEN            # gene symbol
@@ -134,10 +150,33 @@ Then **fetch the authoritative sources** and read the current specifics from the
 Prefer, in order: the named guideline or consensus statement → GeneReviews →
 ClinGen / ClinVar → the patient organisation's clinician-facing materials.
 
-**If the gene is not in the index**, do not stop. Search GeneReviews, ClinGen, OMIM, and
-recent literature for that gene, then say plainly how much established guidance you
-found. "There is no published surveillance protocol for this gene; the evidence is
-limited to case reports" is a genuinely useful answer that families rarely get.
+**When the report names a specific variant, also establish its provenance.** The gene-level
+sources cannot tell you how well supported *this* variant's classification is, or who
+supported it. `--variant` builds the ClinVar / ClinGen / OMIM query set for you:
+
+```bash
+python scripts/gene_lookup.py PTEN --variant "NM_000314.8:c.388C>T"
+python scripts/gene_lookup.py MLH1 --variant "c.1852_1854del"   # works off-registry too
+```
+
+Read `references/retrieval_protocol.md`, Step 2b, for what to extract and the traps.
+One rule governs the whole step:
+
+> **The reporting laboratory's classification is the one that governs. ClinVar and OMIM
+> give you its provenance, not a different answer.**
+
+You are not re-classifying, and you could not — you do not have the lab's evidence. What
+you are establishing is whether the classification is well supported or lonely, and how
+recently anyone looked. **Never promote a VUS and never downgrade a pathogenic call.** If
+ClinVar disagrees with the report, that is a disagreement to report and route to the lab
+and the genetics team, not one to settle. Watch for the submitter that *is* the reporting
+laboratory: that is the same opinion counted twice, not corroboration.
+
+**Most genes will not be in the registry, and that is expected.** Follow the protocol,
+then say plainly which level you landed in. *"There is no published surveillance protocol
+for this gene; the evidence is limited to case reports"* is a genuinely useful answer that
+families rarely get — and promoting sparse evidence to sound useful is the same failure as
+reciting from memory.
 
 ### Step 3 — Apply the risk layer
 
@@ -241,7 +280,84 @@ simplification of the clinician version; it answers different questions. Familie
 "what does this mean for my child and what do we do"; clinicians ask "what is the
 evidence and what am I obliged to act on."
 
-Use `scripts/render_brief.py` to assemble the final document if writing to a file.
+**Ask which format they want, before rendering.** Do not choose for them — put it in
+one line and wait:
+
+> *"Would you like this as an interactive page you can click through and keep, or as a
+> detailed written report?"*
+
+Then render what they asked for:
+
+```bash
+python scripts/render_brief.py findings.json --out brief.md                    # detailed report
+python scripts/render_brief.py findings.json --html brief.html                 # interactive, family
+python scripts/render_brief.py findings.json --html clin.html --audience clinician
+```
+
+The interactive page is one self-contained file — no scripts, no external assets, so it
+opens offline, prints, and survives being emailed. `--audience` picks which register it
+carries; produce both files if both audiences are in the room.
+
+**Published figures, if you have them — and there is no score.** One distinction governs
+this whole feature:
+
+> **A published penetrance figure describes a cohort. A score describes a person. This
+> skill produces the first and never the second.**
+
+Nothing is computed here. `risk_figures` reproduces figures that appear *in a source*,
+with a bar drawn next to each — a bibliography, to scale. The moment a figure is combined,
+averaged, converted from a hazard ratio, adjusted for family history, or restated as "your
+risk", it stops being a citation and becomes a prediction about an individual, which is the
+diagnostic act this skill exists in order not to perform. **Do not use the phrase "risk
+score" in output**, and if asked for one, decline in a sentence and give the Tier 1 picture.
+
+Every entry needs all five of `condition`, `percent`, `cohort`, `source` and `retrieved`.
+Anything missing one is refused and listed with the reason, because a bar is read as a
+fact and an uncited number on a chart is the most persuasive way this tool could mislead
+someone. **The cohort field is not decoration** — most published penetrance comes from
+families ascertained *because someone was already affected*, which runs far higher than
+the figure for a variant found incidentally. The bar without that line says something
+untrue.
+
+**The whole block is gated on the reporting laboratory's classification**, read from
+`clinician.finding_table`. Pathogenic and likely pathogenic draw; a VUS, a benign call, a
+conflicting call, or no classification recorded refuses the block and prints why. A
+penetrance figure beside a VUS turns "we do not know" into a coloured bar.
+
+**Figures are clinician-register only.** They render in the clinician markdown register
+and on `--audience clinician`. They appear in **no family-facing output in any format** —
+a professional reads a penetrance figure against the cohort it came from, and the same
+figure handed to a family reads as a forecast about their child. The scripts enforce this;
+do not work around it by pasting figures into the family prose. Both surfaces carry a
+**reference-only block**: not a diagnosis, not a risk assessment for this patient, not a
+basis for a clinical decision on its own, and direct the patient to their genetics team or
+an appropriately qualified clinician.
+
+### The interactive panel
+
+For several findings in one report, or two cohorts for one condition, pass `risk_panel`
+instead of the flat list: the clinician page then carries profile tabs and a cohort-basis
+toggle, built from radio inputs and CSS so there are **still no scripts**. The field shape
+is in `references/output_templates.md`.
+
+**Nothing in the panel is computed, and that is the point of its design.** Where a variant
+browser would put a calculated risk score, this puts the ClinVar provenance you retrieved
+at Step 2b. Where one would put a penetrance dial, this puts a **cohort-basis toggle** that
+switches between two *published* figures — so the clinic-ascertained and population-based
+numbers for one condition sit a click apart. That contrast is the most useful thing a
+clinician gets from a penetrance figure, and it is why the control exists.
+
+**Never add a score slot or a parameter slider.** A control that changes what a number
+works out to is a risk calculator on an individual, whatever it is labelled.
+
+`surveillance_tier` takes **1, 2 or 3 only** — the evidence tiers from
+`references/risk_layer_policy.md`. It is not an actionability rating and not a risk
+verdict: "Tier III (Low Risk)" is refused and dropped, because whether a finding is low
+risk is a clinical judgement this skill does not make (guardrail 9).
+
+**Polygenic risk scores remain excluded entirely** — Tier 3, population-level instruments
+with discrimination far below usefulness for one person. They never reach the chart under
+any framing.
 
 ## Translating a technical document for a family
 
@@ -338,6 +454,16 @@ Some specifics that matter:
 10. **Never invent a clinical feature to strengthen a request.** Only features the user
     actually reported go into a drafted referral or funding request, and any draft is for
     a human to check and send.
+11. **No risk scores — cite cohort figures or say none exists.** A penetrance figure
+    describes a cohort; a score describes a person, and producing one is the diagnostic
+    act this skill exists in order not to perform. Never compute, combine, average,
+    convert or personalise a figure, and never attach one to a VUS. Never build a control
+    that changes what a number works out to. Figures are **clinician-register only** and
+    carry a reference-only statement routing the patient to a clinician. See
+    `references/risk_layer_policy.md`.
+12. **Never re-classify a variant.** The reporting laboratory's classification governs.
+    ClinVar and OMIM establish its provenance, not a replacement for it — report a
+    disagreement and route it; never promote a VUS or downgrade a pathogenic call.
 
 ## Reference files
 
@@ -345,12 +471,14 @@ Read these as needed — they are not all required for every case:
 
 | File | Read it when |
 |---|---|
-| `references/gene_index.md` | Always, at Step 2 |
+| `references/retrieval_protocol.md` | Always, at Step 2 — the primary path for any gene or condition |
+| `references/gene_index.md` | The prose behind a curated pitfall entry |
 | `references/risk_layer_policy.md` | Always, before writing anything about future risk |
 | `references/vus_communication.md` | Any report containing a VUS |
 | `references/report_parsing.md` | Report format is unfamiliar or fields are unclear |
 | `references/testing_indications.md` | Always, at Step 6 — before writing anything about further testing or access |
 | `references/request_templates.md` | The user wants wording for a clinician, genetics service or payer |
+| `references/data_privacy.md` | Before working with a real report, and whenever asked to put an identifier in a file |
 | `references/output_templates.md` | At Step 7, and whenever translating a document for a family |
 
 ## Scripts
@@ -358,9 +486,9 @@ Read these as needed — they are not all required for every case:
 | Script | Purpose |
 |---|---|
 | `scripts/parse_report.py` | Extract structured variant / CNV / repeat-expansion records from a report (PDF, text, VCF); redacts identifiers by default |
-| `scripts/gene_lookup.py` | Query the curated index by gene symbol, syndrome name, alias, or cytoband; returns syndrome, sources, care domains, traps |
+| `scripts/gene_lookup.py` | Query the curated index by gene symbol, syndrome name, alias, or cytoband; returns syndrome, sources, care domains, traps. `--variant` adds the ClinVar / ClinGen / OMIM query set for variant-level provenance |
 | `scripts/indication_lookup.py` | Clinical features + prior tests → what further testing is indicated, which authority governs it, what the prior assay could not have found, and (with `--report-date`) the case-level reanalysis assessment |
 | `scripts/plain_language.py` | Scan technical text and return the plain rendering of each term, plus the traps where translating carelessly changes the meaning |
-| `scripts/render_brief.py` | Assemble the two-register output document; refuses to write a file containing identifiers |
+| `scripts/render_brief.py` | Assemble the two-register output document; refuses to write a file containing identifiers, and refuses to draw a risk figure without a cohort, a source, a date and a pathogenic classification |
 
 Run `python scripts/<name>.py --help` for usage.
