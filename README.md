@@ -8,16 +8,17 @@ the **published, actionable care implications** of what was found.
 
 ## Quick start
 
-**1 · Get the skill.** Clone or download this repository, then build the upload folder:
+**1 · Get the skill.** Clone or download this repository, then build the upload package:
 
 ```bash
 python scripts/bundle_skill.py
 ```
 
-That writes `dist/gene-to-care-navigator/` — **upload that folder**, not the repository.
-The repository carries a test corpus, diagrams and git history that an uploaded skill does
-not need; the bundle is about 300 KB against 5 MB. Add `--zip` if your platform wants an
-archive. Nothing to install: there are no dependencies.
+That writes two things into `dist/` — a folder and a `.zip` of it. **Upload one of those,
+not the repository**, which carries a test corpus, diagrams and git history the skill does
+not need (300 KB against 5 MB). If a folder upload fails, upload the `.zip`; see
+[Packaging for upload](#packaging-for-upload). Nothing to install: there are no
+dependencies.
 
 **2 · Just ask, in your own words.** Don't name the skill; it recognises what you're asking
 about.
@@ -288,21 +289,56 @@ full, because deletion and duplication of one band can have partly opposite phen
 
 ### `bundle_skill.py`
 
-Builds the upload folder and then checks it, rather than trusting the copy.
+Builds the upload package and then checks it, rather than trusting the copy.
 
 ```bash
-python scripts/bundle_skill.py            # -> dist/gene-to-care-navigator/
-python scripts/bundle_skill.py --list     # what would be copied
-python scripts/bundle_skill.py --zip      # also write the archive
+python scripts/bundle_skill.py            # folder + .zip in dist/
+python scripts/bundle_skill.py --list     # what would be copied, then stop
+python scripts/bundle_skill.py --flat     # SKILL.md at the archive root
+python scripts/bundle_skill.py --no-zip   # folder only
+python scripts/bundle_skill.py --out ~/Desktop
 ```
 
 It copies `SKILL.md`, `references/`, `scripts/`, `assets/` and the licence files, and
-leaves out the test corpus, diagrams, README, git history and Python caches. Checks run
-against the result: the frontmatter **parses as YAML** and sits inside the platform's name
-and description limits, every path the bundled prose points at exists in the bundle, and
-every script still runs with its assets resolvable from the new location. A failure is
-printed with its reason and exits non-zero — the bundle is still written so you can look
-at it.
+leaves out the test corpus, diagrams, README, git history and Python caches.
+
+`README.md` is deliberately not bundled. It documents the repository — tests, fixtures,
+roadmap, licence rationale — none of which exists in a bundle, so shipping it would put
+dangling references in front of the agent. The privacy content the skill itself relies on
+lives in `references/data_privacy.md`.
+
+#### Packaging for upload
+
+A skill upload needs **`SKILL.md` at the upload root, or at the top of a single enclosing
+folder**, and must be **under 30 MB uncompressed**. This bundle is ~314 KB, so only the
+layout is ever in question. Work down this ladder:
+
+| If | Then |
+|---|---|
+| Folder upload works | Upload `dist/gene-to-care-navigator/`. Done |
+| Folder upload is rejected or silently fails | Upload `dist/gene-to-care-navigator.zip`. It contains one top-level folder with `SKILL.md` at its top — the layout the docs show |
+| The zip is also rejected | Rebuild with `--flat` and upload that. Some uploaders want `SKILL.md` at the archive root with no enclosing folder |
+
+**Do not zip it with Finder's "Compress".** macOS adds a `__MACOSX/` tree and `.DS_Store`
+entries that some uploaders reject and none of them need. `bundle_skill.py` writes the
+archive with Python's `zipfile`, which adds neither, and fails the build if either appears.
+
+The archive is **byte-identical across runs** — entries sorted, timestamps fixed — so two
+builds of the same tree produce the same file, and a changed checksum means the content
+actually changed. Scripts with a shebang keep their executable bit; nothing else gets one.
+
+#### What it verifies
+
+Checks run against the built folder and the archive. A failure prints its reason and exits
+non-zero; both are still written so you can look at them.
+
+| Check | Catches |
+|---|---|
+| Frontmatter **parses as YAML** | A colon-space in the description, a `#`, a leading indicator character — each makes the skill unimportable |
+| `name` and `description` within limits | 64 and 1024 characters; over by one is a rejected upload |
+| Every path the bundled prose points at exists | A reference file left out, which produces a skill that reads normally and has silently lost a layer of judgement |
+| Every script runs from its new location | An asset that did not travel, so a lookup fails at use time rather than build time |
+| Archive shape and contents | `SKILL.md` missing from the expected path, `__MACOSX`/`.DS_Store` junk, more than one top-level entry, or contents over the 30 MB limit |
 
 The YAML check is not decoration. The `description` is an unquoted scalar, so a colon
 followed by a space inside it (`care implications: surveillance…`) parses as a nested
@@ -310,14 +346,6 @@ mapping and the import fails with an error naming a column rather than a cause. 
 checks alone let exactly that ship once. `scripts/bundle_skill.py` holds the single
 implementation and `tests/smoke_test.py` calls it, so the repository and a built bundle are
 judged by the same rules.
-
-The reference check is the one that earns the script. A reference file left out produces a
-skill that reads normally and has silently lost a layer of judgement.
-
-**`README.md` is deliberately not bundled.** It documents the repository — tests, fixtures,
-roadmap, licence rationale — none of which exists in a bundle, so shipping it would put
-dangling references in front of the agent. The privacy content the skill itself relies on
-lives in `references/data_privacy.md`.
 
 ### `indication_lookup.py`
 

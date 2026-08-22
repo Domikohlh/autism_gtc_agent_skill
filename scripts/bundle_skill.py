@@ -246,12 +246,86 @@ def check_scripts_run(dest: Path) -> list[str]:
     return problems
 
 
+# Anthropic's documented ceiling for a custom skill upload, uncompressed.
+MAX_UPLOAD_BYTES = 30 * 1024 * 1024
+
+# Written into every archive entry so the same tree always produces the same
+# bytes. Real mtimes make two identical bundles differ, which turns "did this
+# change?" into a question you cannot answer by looking.
+ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
+
+
+def write_zip(dest: Path, flat: bool = False) -> Path:
+    """
+    Zip the built bundle.
+
+    `SKILL.md` must sit at the upload root or at the top of a single enclosing
+    folder. The default writes the enclosing folder, which is the form the docs
+    show; `flat` writes the files at the archive root for uploaders that want
+    that instead.
+
+    Built with zipfile rather than the Finder's Compress, deliberately: macOS
+    adds a `__MACOSX/` tree and `.DS_Store` entries that some uploaders reject
+    and none of them need.
+    """
+    archive = dest.parent / f"{dest.name}.zip"
+    files = sorted(f for f in dest.rglob("*") if f.is_file())
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in files:
+            rel = f.relative_to(dest if flat else dest.parent)
+            info = zipfile.ZipInfo(rel.as_posix(), date_time=ZIP_TIMESTAMP)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            # Executable only where there is a shebang to honour.
+            executable = f.read_bytes()[:2] == b"#!"
+            info.external_attr = (0o755 if executable else 0o644) << 16
+            z.writestr(info, f.read_bytes())
+    return archive
+
+
+def check_archive(archive: Path, flat: bool) -> list[str]:
+    """The archive must be readable, correctly shaped, and free of junk."""
+    problems = []
+    with zipfile.ZipFile(archive) as z:
+        bad = z.testzip()
+        if bad is not None:
+            return [f"archive is corrupt at {bad}"]
+
+        names = z.namelist()
+        expected = "SKILL.md" if flat else f"{archive.stem}/SKILL.md"
+        if expected not in names:
+            problems.append(
+                f"{expected} is not in the archive — an uploader looks for SKILL.md at "
+                "the root or at the top of a single enclosing folder"
+            )
+        junk = [n for n in names
+                if n.startswith("__MACOSX/") or Path(n).name in SKIP_NAMES
+                or Path(n).suffix in SKIP_SUFFIXES]
+        if junk:
+            problems.append(f"archive contains {len(junk)} junk entries, first {junk[0]}")
+
+        if not flat:
+            roots = {n.split("/", 1)[0] for n in names}
+            if len(roots) > 1:
+                problems.append(f"archive has {len(roots)} top-level entries, expected one folder")
+
+        raw = sum(i.file_size for i in z.infolist())
+        if raw > MAX_UPLOAD_BYTES:
+            problems.append(
+                f"uncompressed contents are {raw:,} bytes, over the "
+                f"{MAX_UPLOAD_BYTES:,} upload limit"
+            )
+    return problems
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=str(ROOT / "dist"),
                     help="Directory to build into (default: dist/)")
-    ap.add_argument("--zip", action="store_true", help="Also write <name>.zip beside it")
+    ap.add_argument("--no-zip", action="store_true",
+                    help="Skip the .zip and write only the folder")
+    ap.add_argument("--flat", action="store_true",
+                    help="Put SKILL.md at the archive root instead of inside a folder")
     ap.add_argument("--list", action="store_true",
                     help="Print what would be copied and stop")
     args = ap.parse_args()
@@ -267,29 +341,36 @@ def main() -> int:
     dest = Path(args.out).expanduser().resolve() / skill_name()
     build(dest, files)
     total = sum(f.stat().st_size for f in dest.rglob("*") if f.is_file())
-    print(f"built {dest}")
-    print(f"  {len(files)} files, {total:,} bytes")
 
     problems = (check_frontmatter(dest)
                 + check_references(dest)
                 + check_scripts_run(dest))
     sweep(dest)
+
+    print(f"folder  {dest}")
+    print(f"        {len(files)} files, {total:,} bytes")
+
+    archive = None
+    if not args.no_zip:
+        archive = write_zip(dest, flat=args.flat)
+        problems += check_archive(archive, flat=args.flat)
+        shape = "SKILL.md at root" if args.flat else f"{dest.name}/SKILL.md"
+        print(f"zip     {archive}")
+        print(f"        {archive.stat().st_size:,} bytes, {shape}")
+
     if problems:
         print("\nProblems — fix these before uploading:")
         for p in problems:
             print(f"  FAIL  {p}")
         return 1
-    print("  frontmatter within limits · references resolve · scripts run")
 
-    if args.zip:
-        archive = dest.parent / f"{dest.name}.zip"
-        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
-            for f in sorted(dest.rglob("*")):
-                if f.is_file():
-                    z.write(f, f.relative_to(dest.parent))
-        print(f"  wrote {archive} ({archive.stat().st_size:,} bytes)")
-
-    print(f"\nUpload this folder: {dest}")
+    print("        frontmatter valid · references resolve · scripts run"
+          + (" · archive verified" if archive else ""))
+    print("\nUpload the folder. If your platform rejects a folder upload, "
+          "upload the .zip instead.")
+    if archive and not args.flat:
+        print("If the .zip is also rejected, rebuild with --flat: some uploaders want "
+              "SKILL.md\nat the archive root rather than inside a folder.")
     return 0
 
 
